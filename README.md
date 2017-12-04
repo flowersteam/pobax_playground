@@ -25,7 +25,7 @@ catkin_make
 ```
 cd ~/catkin_ws
 ./baxter.sh   # Make sure you have copied it and edited its variables first. See Baxter workstation setup
-roslaunch thr_interaction_controller manual.launch
+roslaunch thr_interaction_controller manual.launch scene:=pobax display:=action
 ```
 
 ## Troubleshooting
