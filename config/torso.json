@@ -19,7 +19,8 @@
       "r_shoulder_y",
       "r_shoulder_x",
       "r_arm_z",
-      "r_elbow_y"
+      "r_elbow_y",
+      "r_claw_x"
     ],
     "torso": [
       "abs_z",
@@ -30,7 +31,8 @@
       "l_shoulder_y",
       "l_shoulder_x",
       "l_arm_z",
-      "l_elbow_y"
+      "l_elbow_y",
+      "l_claw_x"
     ],
     "arms": [
       "l_arm",
@@ -47,6 +49,16 @@
         0
       ],
       "orientation": "direct"
+    },
+    "l_claw_x": {
+      "offset": -50,
+      "type": "AX-12",
+      "id": 45,
+      "angle_limit": [
+        -100,
+        100
+      ],	
+      "orientation": "indirect"
     },
     "head_y": {
       "offset": 20.0,
@@ -105,6 +117,16 @@
       "angle_limit": [
         0,
         147
+      ],
+      "orientation": "indirect"
+    },
+    "r_claw_x": {
+      "offset": 0.0,
+      "type": "AX-12",
+      "id": 55,
+      "angle_limit": [
+        -40,
+        15
       ],
       "orientation": "indirect"
     },
