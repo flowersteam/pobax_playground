@@ -6,6 +6,7 @@
 
   <maintainer email="yoan.mollard@inria.fr">Yoan Mollard</maintainer>
   <maintainer email="sebastien.forestier@inria.fr">Sébastien Forestier</maintainer>
+  <maintainer email="remy.portelas@gmail.com">Rémy Portelas</maintainer>
 
   <license>GPL3</license>
 
@@ -14,9 +15,9 @@
   <exec_depend>poppy_msgs</exec_depend>
   <build_depend>poppy_torso_controllers</build_depend>
   <exec_depend>poppy_torso_controllers</exec_depend>
-  <build_depend>optitrack_publisher</build_depend>  <!-- From https://github.com/baxter-flowers/optitrack_publisher -->
+  <build_depend>optitrack_publisher</build_depend>  <!-- From https://github.com/flowersteam/optitrack_publisher -->
   <exec_depend>optitrack_publisher</exec_depend>
-  <build_depend>baxter_commander</build_depend> <!-- From https://github.com/baxter-flowers/baxter_commander -->
+  <build_depend>baxter_commander</build_depend> <!-- From https://github.com/flowersteam/baxter_commander -->
   <exec_depend>baxter_commander</exec_depend>
   <buildtool_depend>catkin</buildtool_depend>
 
