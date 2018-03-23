@@ -8,11 +8,15 @@ import os
 import pyautogui
 
 class Torso(object):
+    angle_limits_l_arm = [(-50,20),(-10,50),(-30,55),(-30,20),(0,80)]
+
     def __init__(self):
         self.rospack = RosPack()
         robot_config = join(self.rospack.get_path('pobax_playground'), 'config', 'torso.json')
         self.torso = from_json(robot_config)
         self.torso.compliant = False
+        self.go_to_rest(slow=True)
+        self.set_torque_max(20)
     
     def set_torque_max(self, torque_max=100):
         for m in self.torso.motors:
@@ -20,9 +24,7 @@ class Torso(object):
 
     def go_to_rest(self, slow=True):
         duration = 2 if slow else 0.25
-        #self.torso.goto_position({'l_shoulder_y': 13, 'l_shoulder_x': 20, 'l_elbow_y': -25}, duration)
-        #rospy.sleep(duration)
-        self.go_to([0, 0, 0, 0, 20, 0, 0, 0, 0, 0, 0, 0, 0], duration)
+        self.go_to([0 for i in range(len(torso.motors))], duration)
         self.in_rest_pose = True
 
     def go_to(self, motors, duration):
@@ -30,8 +32,23 @@ class Torso(object):
         self.torso.goto_position(motors_dict, duration)
         rospy.sleep(duration)
 
+    def go_to_safe(self,duration=2):
+        #todo check if in rest before
+        if not self.in_rest_pose:
+            print("go_to_safe position failed, torso wasn't in rest pose")
+            return
+        go_to([30,-20,0,0,0,20,0,70,0,0,20,0,-40,0,0],duration)
+
     def close(self):
         self.torso.close()
+
+class Baxter(object):
+    def __init__(self):
+        pass
+
+    def send_command(self,cmd):
+        pyautogui.typewrite('r')
+        pyautogui.press('enter')
 
 
 class Controller(object):
@@ -41,6 +58,7 @@ class Controller(object):
             self.params = json.load(f)
 
         #self.torso = Torso()
+        self.Baxter = Baxter()
         rospy.loginfo('Controller fully started!')
 
 
@@ -57,14 +75,14 @@ class Controller(object):
                 #recording = self.perception.record(human_demo=False, nb_points=self.params['nb_points'])
                 #recording.demo.torso_demonstration = JointTrajectory()
                 #self.torso.set_torque_max(80)
-                #return self.learning.perceive(recording.demo)
+                #return self.learning.perceive(recording.demo
                 rospy.sleep(5)
-                #os.system("ls")
-                pyautogui.typewrite('r')
-                pyautogui.press('enter')
-
+                print("test")
+                self.Baxter.send_command("r")
+                
         finally:
-            self.torso.close()
+            pass
+            #self.torso.close()
         
 
 if __name__ == '__main__':
