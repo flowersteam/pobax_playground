@@ -38,17 +38,18 @@ class Controller(object):
         with open(join(self.rospack.get_path('pobax_playground'), 'config', 'general.json')) as f:
             self.params = json.load(f)
 
-        self.torso = Torso()
+        #self.torso = Torso()
         rospy.loginfo('Controller fully started!')
 
 
 
     def run(self):
-        self.torso.go_to_rest()
+        #self.torso.go_to_rest()
+        print "controller node up and running"
         try:
             while not rospy.is_shutdown():
                 #trajectory = self.learning.produce(skill_to_demonstrate=self.demonstrate).torso_trajectory
-                self.torso.set_torque_max(15)
+                #self.torso.set_torque_max(15)
                 #self.recorder.record(task, method, trial, iteration)
                 #self.torso.execute_trajectory(trajectory)  # TODO: blocking, non-blocking, action server?
                 #recording = self.perception.record(human_demo=False, nb_points=self.params['nb_points'])
@@ -56,6 +57,7 @@ class Controller(object):
                 #self.torso.set_torque_max(80)
                 #return self.learning.perceive(recording.demo)
                 rospy.sleep(1)
+                print "test"
         finally:
             self.torso.close()
         

@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="output" default="screen"/> <!-- Set output="log" to mute the screen output -->
+  <arg name="debug" default="True"/> <!-- Enable debugging information and pictures -->
+  <arg name="save" default="False"/> <!-- Enable database dumping in folder logs/ -->
+  <arg name="source" default="none"/> <!-- Source of pre-planned data for this experiment -->
+  <arg name="name" default="experiment"/> <!-- Name of the experiment -->
+  <arg name="display" default="action"/> <!-- display mode for baxter {action,debug,face} -->
+  <arg name="iterations" default="5000"/> <!-- Number of iterations to run -->
+  <arg name="ip_vrpn" default="baxterflowers.local"/> <!-- IP of the VRPN server (like Motive or Arena) -->
+
+  <include file="$(find thr_interaction_controller)/launch/manual.launch" >
+    <arg name="scene" value="pobax"/>
+    <arg name="display" value="$(arg display)"/>
+    <arg name="name" value="$(arg name)"/>
+    <arg name="ip" value="$(arg ip_vrpn)"/>
+  </include>
+
+  <node name="controller" pkg="pobax_playground" type="controller.py" output="$(arg output)" required="true"/>
+</launch>
