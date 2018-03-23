@@ -4,6 +4,8 @@ import json
 from os.path import join
 from pypot.robot import from_json  # Custom Poppy Torso with AX12 grippers
 from rospkg import RosPack
+import os
+import pyautogui
 
 class Torso(object):
     def __init__(self):
@@ -56,8 +58,11 @@ class Controller(object):
                 #recording.demo.torso_demonstration = JointTrajectory()
                 #self.torso.set_torque_max(80)
                 #return self.learning.perceive(recording.demo)
-                rospy.sleep(1)
-                print "test"
+                rospy.sleep(5)
+                #os.system("ls")
+                pyautogui.typewrite('r')
+                pyautogui.press('enter')
+
         finally:
             self.torso.close()
         
