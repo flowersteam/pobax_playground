@@ -5,7 +5,8 @@ from os.path import join
 from pypot.robot import from_json  # Custom Poppy Torso with AX12 grippers
 from rospkg import RosPack
 import os
-import pyautogui
+from thr_interaction_controller.srv import *
+
 
 class Torso(object):
     angle_limits_l_arm = [(-50,20),(-10,50),(-30,55),(-30,20),(0,80)]
@@ -43,12 +44,18 @@ class Torso(object):
         self.torso.close()
 
 class Baxter(object):
+
     def __init__(self):
-        pass
+        rospy.wait_for_service('baxter_command')
+        self.baxter_command = rospy.ServiceProxy('baxter_command', BaxterCommand)
 
     def send_command(self,cmd):
-        pyautogui.typewrite('r')
-        pyautogui.press('enter')
+        try:
+            resp1 = self.baxter_command(cmd)
+            print resp1
+        except rospy.ServiceException, e:
+            print "Service call failed: %s"%e
+
 
 
 class Controller(object):
@@ -83,7 +90,7 @@ class Controller(object):
         finally:
             pass
             #self.torso.close()
-        
+
 
 if __name__ == '__main__':
     rospy.init_node("controller")
