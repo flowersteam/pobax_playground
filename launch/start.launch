@@ -17,5 +17,13 @@
     <arg name="comm_mode" value="ros"/>
   </include>
 
+  <param name="/pobax_playground/perception/debug" value="$(arg debug)" />
+  <param name="/pobax_playground/experiment_name" value="$(arg name)" />
+  <param name="/pobax_playground/source_name" value="$(arg source)" />
+  <param name="/pobax_playground/iterations" value="$(arg iterations)" />
+  <param name="/pobax_playground/save" value="$(arg save)" />
+
   <node name="controller" pkg="pobax_playground" type="controller.py" output="$(arg output)" required="true"/>
+  <node name="learning" pkg="pobax_playground" type="learning_node.py" output="$(arg output)" required="true"/>
+
 </launch>

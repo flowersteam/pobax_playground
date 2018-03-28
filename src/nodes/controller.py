@@ -6,6 +6,7 @@ from pypot.robot import from_json  # Custom Poppy Torso with AX12 grippers
 from rospkg import RosPack
 import os
 from thr_interaction_controller.srv import *
+from pobax_playground.srv import *
 
 
 class Torso(object):
@@ -56,6 +57,24 @@ class Baxter(object):
         except rospy.ServiceException, e:
             print "Service call failed: %s"%e
 
+class Learning_controller(object):
+
+    def __init__(self):
+        self.services = {'produce': {'name': '/pobax_playground/learning/produce', 'type': Produce},
+                         'perceive': {'name': '/pobax_playground/learning/perceive', 'type': Perceive}}
+
+        for service_name, service in self.services.items():
+            rospy.loginfo("Controller is waiting service {}...".format(service['name']))
+            rospy.wait_for_service(service['name'])
+            service['call'] = rospy.ServiceProxy(service['name'], service['type'])
+
+    def perceive(self, demonstration):
+        call = self.services['perceive']['call']
+        return call(PerceiveRequest(demo=demonstration))
+
+    def produce(self, space_to_explore=0):
+        call = self.services['produce']['call']
+        return call(ProduceRequest())
 
 
 class Controller(object):
@@ -65,7 +84,8 @@ class Controller(object):
             self.params = json.load(f)
 
         #self.torso = Torso()
-        self.Baxter = Baxter()
+        self.baxter = Baxter()
+        self.learning = Learning_controller()
         rospy.loginfo('Controller fully started!')
 
 
@@ -76,16 +96,17 @@ class Controller(object):
         try:
             while not rospy.is_shutdown():
                 #trajectory = self.learning.produce(skill_to_demonstrate=self.demonstrate).torso_trajectory
+                print self.learning.produce()
                 #self.torso.set_torque_max(15)
                 #self.recorder.record(task, method, trial, iteration)
                 #self.torso.execute_trajectory(trajectory)  # TODO: blocking, non-blocking, action server?
                 #recording = self.perception.record(human_demo=False, nb_points=self.params['nb_points'])
                 #recording.demo.torso_demonstration = JointTrajectory()
                 #self.torso.set_torque_max(80)
-                #return self.learning.perceive(recording.demo
+                self.learning.perceive("Calling Percieve, TODO implement demonstration")
                 rospy.sleep(5)
                 print("test")
-                self.Baxter.send_command("r")
+                self.baxter.send_command("r")
                 
         finally:
             pass
