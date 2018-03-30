@@ -1,2 +1,2 @@
-string torso_trajectory
+trajectory_msgs/JointTrajectory torso_trajectory
 ---

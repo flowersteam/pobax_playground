@@ -56,15 +56,14 @@ class LearningNode(object):
         self.pub_interests = rospy.Publisher('/pobax_playground/learning/interests', Interests, queue_size=1, latch=True)
         self.pub_focus = rospy.Publisher('/pobax_playground/learning/current_focus', String, queue_size=1, latch=True)
 
-        '''
+        
         # Using these services
         self.service_name_get_perception = "/pobax_playground/perception/get"
         for service in [self.service_name_get_perception]:
             rospy.loginfo("Learning  node is waiting service {}...".format(service))
             rospy.wait_for_service(service)
         self.get_state = rospy.ServiceProxy(self.service_name_get_perception, GetSensorialState)
-        '''
-        print "TODO ADD SENSORIAL STATE"
+        
     def run(self):
         rospy.Service(self.service_name_perceive, Perceive, self.cb_perceive)
         rospy.Service(self.service_name_produce, Produce, self.cb_produce)

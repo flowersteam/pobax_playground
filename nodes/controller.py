@@ -10,7 +10,7 @@ from pobax_playground.srv import *
 
 '''
 class Torso_controller(object):
-    self.angle_limits_ext_l_arm = [(-50,20),(-10,50),(-30,55),(-30,20),(0,80)]
+    self.angle_limits_ext_subl l_arm = [(-50,20),(-10,50),(-30,55),(-30,20),(0,80)]
 
     def __init__(self):
         self.rospack = RosPack()
@@ -133,12 +133,11 @@ class Controller(object):
                 rospy.logwarn("#### Iteration {}/{}".format(self.iteration, nb_iterations))
                 #trajectory = self.learning.produce(skill_to_demonstrate=self.demonstrate).torso_trajectory
                 
-                #trajectory = self.learning.produce().torso_trajectory
-                #print "trajectory produced" 
-                #print trajectory
+                trajectory = self.learning.produce().torso_trajectory
+                print "trajectory produced" 
                 #self.torso.set_torque_max(15)
                 #self.recorder.record(task, method, trial, iteration)
-                #self.torso.execute_trajectory(trajectory)  # TODO: blocking, non-blocking, action server?
+                self.torso.execute_trajectory(trajectory)  # TODO: blocking, non-blocking, action server?
                 #recording = self.perception.record(human_demo=False, nb_points=self.params['nb_points'])
                 #recording.demo.torso_demonstration = JointTrajectory()
                 #self.torso.set_torque_max(80)

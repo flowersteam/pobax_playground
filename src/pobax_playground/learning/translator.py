@@ -20,8 +20,8 @@ class EnvironmentTranslator(object):
         with open(join(self.rospack.get_path('pobax_playground'), 'config', 'bounds.json')) as f:
             self.bounds = json.load(f)
         """TODO ADD ON SENSORY BOUNDS"""
-        #self.bounds_motors_min = np.array([float(bound[0]) for bound in self.bounds['motors']['positions']])
-        #self.bounds_motors_max = np.array([float(bound[1]) for bound in self.bounds['motors']['positions']])
+        self.bounds_motors_min = np.array([float(bound[0]) for bound in self.bounds['motors']['positions']])
+        self.bounds_motors_max = np.array([float(bound[1]) for bound in self.bounds['motors']['positions']])
         #self.bounds_sensory_min = [d for space in ['hand', 'joystick_1', 'joystick_2', 'ergo', 'ball', 'light', 'sound'] for d in [float(bound[0])for bound in self.bounds['sensory'][space]]*10]
         #self.bounds_sensory_min = np.array([float(self.bounds['sensory']['ergo'][0][0]), float(self.bounds['sensory']['ball'][0][0])] + self.bounds_sensory_min)
         #self.bounds_sensory_max = [d for space in ['hand', 'joystick_1', 'joystick_2', 'ergo', 'ball', 'light', 'sound'] for d in [float(bound[1])for bound in self.bounds['sensory'][space]]*10]
@@ -50,7 +50,7 @@ class EnvironmentTranslator(object):
         return ((normalized_traj - np.array([-1.]*self.n_dmps))/2.) * (self.bounds_motors_max - self.bounds_motors_min) + self.bounds_motors_min
 
     def get_context(self, state):
-        return [state.ergo.angle, state.ball.angle]
+        return [state.culbuto_1.pose]
 
     def sensory_trajectory_msg_to_list(self, state):
         def flatten(list2d):
