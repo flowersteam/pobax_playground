@@ -96,7 +96,7 @@ class EnvironmentTranslator(object):
         assert matrix_traj.shape == (self.timesteps, self.n_dmps)
         traj = JointTrajectory()
         traj.header.stamp = rospy.Time.now()
-        traj.joint_names = ['l_shoulder_y', 'l_shoulder_x', 'l_arm_z', 'l_elbow_y']
+        traj.joint_names = ['l_shoulder_y', 'l_shoulder_x', 'l_arm_z', 'l_elbow_y', 'l_claw_x']
         traj.points = [JointTrajectoryPoint(positions=list(matrix_traj[point])) for point in range(len(matrix_traj))]
         return traj
 

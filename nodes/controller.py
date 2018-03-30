@@ -10,7 +10,7 @@ from pobax_playground.srv import *
 
 '''
 class Torso_controller(object):
-    self.angle_limits_l_arm = [(-50,20),(-10,50),(-30,55),(-30,20),(0,80)]
+    self.angle_limits_ext_l_arm = [(-50,20),(-10,50),(-30,55),(-30,20),(0,80)]
 
     def __init__(self):
         self.rospack = RosPack()
