@@ -15,28 +15,34 @@
       "head_z",
       "head_y"
     ],
+    "ext_r_arm": [
+      "r_arm",
+      "r_claw_x"
+    ],
     "r_arm": [
       "r_shoulder_y",
       "r_shoulder_x",
       "r_arm_z",
-      "r_elbow_y",
-      "r_claw_x"
+      "r_elbow_y"
     ],
     "torso": [
       "abs_z",
       "bust_y",
       "bust_x"
     ],
+    "ext_l_arm": [
+      "l_arm",
+      "l_claw_x"
+    ],
     "l_arm": [
       "l_shoulder_y",
       "l_shoulder_x",
       "l_arm_z",
-      "l_elbow_y",
-      "l_claw_x"
+      "l_elbow_y"
     ],
     "arms": [
-      "l_arm",
-      "r_arm"
+      "ext_l_arm",
+      "ext_r_arm"
     ]
   },
   "motors": {
