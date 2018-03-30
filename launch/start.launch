@@ -23,8 +23,10 @@
   <param name="/pobax_playground/iterations" value="$(arg iterations)" />
   <param name="/pobax_playground/save" value="$(arg save)" />
 
+
   <node name="controller" pkg="pobax_playground" type="controller.py" output="$(arg output)" required="true"/>
   <node name="learning" pkg="pobax_playground" type="learning_node.py" output="$(arg output)" required="true"/>
   <node name="torso" pkg="pobax_playground" type="torso_node.py" output="$(arg output)" respawn="true"/>
+  <node name="perception" pkg="pobax_playground" type="perception_node.py" output="$(arg output)"/>
 
 </launch>

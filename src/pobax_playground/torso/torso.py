@@ -65,6 +65,13 @@ class Torso(object):
     def run(self, dummy=False):
         rospy.loginfo("Torso is connecting to the robot...")
         self.torso = from_json(join(self.rospack.get_path('pobax_playground'), 'config', 'torso.json'))
+        #self.torso = PoppyTorso(use_http=True, simulator='poppy-simu' if dummy else None,config=join(self.rospack.get_path('pobax_playground'), 'config', 'torso.json'))
+        #self.torso = PoppyTorso(use_http=True, simulator='poppy-simu' if dummy else None)
+        #print "TORSO LOADED"
+        #print json.load(join(self.rospack.get_path('pobax_playground'), 'config', 'torso.json'))
+        #print "HOURRRA"
+        #self.torso.config = json.load(join(self.rospack.get_path('pobax_playground'), 'config', 'torso.json'))
+
         if self.torso == None:
             rospy.logerr("Torso failed to init: {}".format(e))
             return None
@@ -89,7 +96,7 @@ class Torso(object):
             while not rospy.is_shutdown():
                 #self.publish_eef(self.torso.l_arm_chain.end_effector, self.eef_pub_l)
                 #self.publish_eef(self.torso.r_arm_chain.end_effector, self.eef_pub_r)
-                print('ASK THEO FOR EEF PUBLISHING ISSUE L_ARM_CHAIN')
+                #print('ASK THEO FOR EEF PUBLISHING ISSUE L_ARM_CHAIN')
                 self.publish_js()
                 self.publish_rate.sleep()
         finally:
