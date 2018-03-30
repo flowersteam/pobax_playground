@@ -29,14 +29,14 @@ class EnvironmentTranslator(object):
         #self.bounds_sensory_diff = self.bounds_sensory_max - self.bounds_sensory_min
 
         # DMP PARAMETERS
-        self.n_dmps = 4
+        self.n_dmps = 5
         self.n_bfs = 7
         self.timesteps = 30
         self.max_params = np.array([300.] * self.n_bfs * self.n_dmps + [1.] * self.n_dmps)
         self.motor_dmp = MyDMP(n_dmps=self.n_dmps, n_bfs=self.n_bfs, timesteps=self.timesteps, max_params=self.max_params)
         self.context = {}
-        self.config = dict(m_mins=[-1.]*32,
-                           m_maxs=[1.]*32,
+        self.config = dict(m_mins=[-1.]*40,
+                           m_maxs=[1.]*40,
                            s_mins=[-1.]*132,
                            s_maxs=[1.]*132)
 
@@ -47,7 +47,12 @@ class EnvironmentTranslator(object):
 
     def w_to_trajectory(self, w):
         normalized_traj = bounds_min_max(self.motor_dmp.trajectory(np.array(w) * self.max_params), self.n_dmps * [-1.], self.n_dmps * [1.])
-        return ((normalized_traj - np.array([-1.]*self.n_dmps))/2.) * (self.bounds_motors_max - self.bounds_motors_min) + self.bounds_motors_min
+        print "normalization done"
+        print np.shape(normalized_traj)
+        print np.shape((normalized_traj - np.array([-1.]*self.n_dmps))/2.)
+        print np.shape((self.bounds_motors_max - self.bounds_motors_min))
+        tmp1 = ((normalized_traj - np.array([-1.]*self.n_dmps))/2.) * (self.bounds_motors_max - self.bounds_motors_min)
+        return  tmp1 + self.bounds_motors_min
 
     def get_context(self, state):
         return [state.culbuto_1.pose]
