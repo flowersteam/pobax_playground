@@ -20,13 +20,16 @@ class EnvironmentTranslator(object):
         with open(join(self.rospack.get_path('pobax_playground'), 'config', 'bounds.json')) as f:
             self.bounds = json.load(f)
         """TODO ADD ON SENSORY BOUNDS"""
+        self.sensory_state_size = 132 #TODO CHANGE TO REAL SENSORY STATE
+
+        self.goal_spaces = ['hand','culbuto_1']
         self.bounds_motors_min = np.array([float(bound[0]) for bound in self.bounds['motors']['positions']])
         self.bounds_motors_max = np.array([float(bound[1]) for bound in self.bounds['motors']['positions']])
-        #self.bounds_sensory_min = [d for space in ['hand', 'joystick_1', 'joystick_2', 'ergo', 'ball', 'light', 'sound'] for d in [float(bound[0])for bound in self.bounds['sensory'][space]]*10]
+        self.bounds_sensory_min =  np.array([d for space in self.goal_spaces for d in [float(bound[0])for bound in self.bounds['sensory'][space]]*10])
         #self.bounds_sensory_min = np.array([float(self.bounds['sensory']['ergo'][0][0]), float(self.bounds['sensory']['ball'][0][0])] + self.bounds_sensory_min)
-        #self.bounds_sensory_max = [d for space in ['hand', 'joystick_1', 'joystick_2', 'ergo', 'ball', 'light', 'sound'] for d in [float(bound[1])for bound in self.bounds['sensory'][space]]*10]
+        self.bounds_sensory_max =  np.array([d for space in self.goal_spaces for d in [float(bound[1])for bound in self.bounds['sensory'][space]]*10])
         #self.bounds_sensory_max = np.array([float(self.bounds['sensory']['ergo'][0][1]), float(self.bounds['sensory']['ball'][0][1])] + self.bounds_sensory_max)
-        #self.bounds_sensory_diff = self.bounds_sensory_max - self.bounds_sensory_min
+        self.bounds_sensory_diff = self.bounds_sensory_max - self.bounds_sensory_min
 
         # DMP PARAMETERS
         self.n_dmps = 5
@@ -37,8 +40,8 @@ class EnvironmentTranslator(object):
         self.context = {}
         self.config = dict(m_mins=[-1.]*40,
                            m_maxs=[1.]*40,
-                           s_mins=[-1.]*132,
-                           s_maxs=[1.]*132)
+                           s_mins=[-1.]*self.sensory_state_size,
+                           s_maxs=[1.]*self.sensory_state_size)
 
     def trajectory_to_w(self, m_traj):
         assert m_traj.shape == (self.timesteps, self.n_dmps)
@@ -47,12 +50,7 @@ class EnvironmentTranslator(object):
 
     def w_to_trajectory(self, w):
         normalized_traj = bounds_min_max(self.motor_dmp.trajectory(np.array(w) * self.max_params), self.n_dmps * [-1.], self.n_dmps * [1.])
-        print "normalization done"
-        print np.shape(normalized_traj)
-        print np.shape((normalized_traj - np.array([-1.]*self.n_dmps))/2.)
-        print np.shape((self.bounds_motors_max - self.bounds_motors_min))
-        tmp1 = ((normalized_traj - np.array([-1.]*self.n_dmps))/2.) * (self.bounds_motors_max - self.bounds_motors_min)
-        return  tmp1 + self.bounds_motors_min
+        return  ((normalized_traj - np.array([-1.]*self.n_dmps))/2.) * (self.bounds_motors_max - self.bounds_motors_min) + self.bounds_motors_min
 
     def get_context(self, state):
         return [state.culbuto_1.pose]
@@ -63,29 +61,20 @@ class EnvironmentTranslator(object):
 
         state_dict = {}
         state_dict['hand'] = flatten([(point.hand.pose.position.x, point.hand.pose.position.y, point.hand.pose.position.z) for point in state.points])
-        state_dict['joystick_1'] = flatten([point.joystick_1.axes for point in state.points])
-        state_dict['joystick_2'] = flatten([point.joystick_2.axes for point in state.points])
-        state_dict['ergo'] = flatten([(point.ergo.angle, float(point.ergo.extended)) for point in state.points])
-        state_dict['ball'] = flatten([(point.ball.angle, float(point.ball.extended)) for point in state.points])
-        state_dict['light'] = [point.color.data for point in state.points]
-        state_dict['sound'] = [point.sound.data for point in state.points]
+        state_dict['culbuto_1'] = flatten([(point.culbuto_1.pose.position.x, point.culbuto_1.pose.position.y, point.culbuto_1.pose.position.z) for point in state.points])
 
-        self.context = {'ball': state_dict['ball'][0],
-                        'ergo': state_dict['ergo'][0]}
-        rospy.loginfo("Context {}".format(self.context))
+        #self.context = {'ball': state_dict['ball'][0],
+        #                'ergo': state_dict['ergo'][0]}
+        #rospy.loginfo("Context {}".format(self.context))
 
         assert len(state_dict['hand']) == 30, len(state_dict['hand'])
-        assert len(state_dict['joystick_1']) == 20, len(state_dict['joystick_1'])
-        assert len(state_dict['joystick_2']) == 20, len(state_dict['joystick_2'])
-        assert len(state_dict['ergo']) == 20, len(state_dict['ergo'])
-        assert len(state_dict['ball']) == 20, len(state_dict['ball'])
-        assert len(state_dict['light']) == 10, len(state_dict['light'])
-        assert len(state_dict['sound']) == 10, len(state_dict['sound'])
+        assert len(state_dict['culbuto_1']) == 30, len(state_dict['culbuto_1'])
 
-        # Concatenate all these values in a huge 132-float list
-        s_bounded = np.array([self.context['ergo'], self.context['ball']] + [value for space in ['hand', 'joystick_1', 'joystick_2', 'ergo', 'ball', 'light', 'sound'] for value in state_dict[space]])
-        s_normalized = ((s_bounded - self.bounds_sensory_min) / self.bounds_sensory_diff) * 2 + np.array([-1.]*132)
-        s_normalized = bounds_min_max(s_normalized, 132 * [-1.], 132 * [1.])
+        # Concatenate all these values in a huge self.sensory_state_size-float list
+        #s_bounded = np.array([self.context['ergo'], self.context['ball']] + [value for space in ['hand', 'culbuto_1'] for value in state_dict[space]])
+        s_bounded = np.array([value for space in ['hand', 'culbuto_1'] for value in state_dict[space]])
+        s_normalized = ((s_bounded - self.bounds_sensory_min) / self.bounds_sensory_diff) * 2 + np.array([-1.]*self.sensory_state_size)
+        s_normalized = bounds_min_max(s_normalized, self.sensory_state_size * [-1.], self.sensory_state_size * [1.])
         # print "context", s_bounded[:2], s_normalized[:2]
         # print "hand", s_bounded[2:32], s_normalized[2:32]
         # print "joystick_1", s_bounded[32:52], s_normalized[32:52]
@@ -93,7 +82,7 @@ class EnvironmentTranslator(object):
         # print "ergo", s_bounded[72:92], s_normalized[72:92]
         # print "ball", s_bounded[92:112], s_normalized[92:112]
         # print "light", s_bounded[112:122], s_normalized[112:122]
-        # print "sound", s_bounded[122:132], s_normalized[122:132]
+        # print "sound", s_bounded[122:self.sensory_state_size], s_normalized[122:self.sensory_state_size]
 
         return list(s_normalized)
 

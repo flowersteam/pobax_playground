@@ -86,8 +86,10 @@ class LearningNode(object):
 
     ################################# Service callbacks
     def cb_perceive(self, request):
+        rospy.logwarn("Aborting perception, TODO modify learning core for new sensory space")
+        return PerceiveResponse()
         s = self.translator.sensory_trajectory_msg_to_list(request.demo.sensorial_demonstration)
-        rospy.loginfo("Learning node is perceiving sensory trajectory only for a normal demo")
+        rospy.loginfo("Learning node is perceiving sensory trajectory for a demo")
         success = self.learning.perceive(s)
 
         if not success:

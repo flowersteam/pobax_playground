@@ -24,19 +24,10 @@ class Learning(object):
     def produce(self, context):
         return self.agent.produce(context)
             
-    def perceive(self, s, m_demo=None, j_demo=False):
-        if m_demo is not None:
-            assert len(m_demo) == 32, len(m_demo)
-            assert len(s) == 132, len(s)
-            # Demonstration of a torso arm trajectory converted to weights with "m_demo = environment.torsodemo2m(m_traj)"
-            return self.agent.perceive(s, m_demo=m_demo)
-        elif j_demo:
-            assert len(s) == 132, len(s)
-            return self.agent.perceive(list(s[:2]) + list(s[32:]), j_demo=True)
-        else:
-            # Perception of environment when m was produced
-            assert len(s) == 132, len(s)
-            return self.agent.perceive(s)
+    def perceive(self, s):
+        # Perception of environment when m was produced
+        assert len(s) == 132, len(s)
+        return self.agent.perceive(s)
             
     def get_iterations(self): return self.agent.t
     def get_normalized_interests(self): return self.agent.get_normalized_interests()    

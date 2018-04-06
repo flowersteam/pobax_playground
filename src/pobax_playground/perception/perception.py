@@ -29,8 +29,9 @@ class Perception(object):
         rospy.loginfo("Done, perception is up!")
 
     def get(self):
-        state = SensorialState(culbuto_1=self.topics.culbuto_1)
-                               #hand=self.topics.torso_l_eef)
+        #TODO ADD VOICE
+        state = SensorialState(hand=self.topics.torso_l_eef,
+                               culbuto_1=self.topics.culbuto_1)
         return state
 
     ################################# Service callbacks
@@ -47,8 +48,7 @@ class Perception(object):
                 break
             if point % self.params["divider_nb_points_sensory"] == 0:
                 response.demo.sensorial_demonstration.points.append(self.get())
-            if not is_joystick_demo:
-                response.demo.torso_demonstration.points.append(joints.state_to_jtp(self.topics.torso_l_j))
+            response.demo.torso_demonstration.points.append(joints.state_to_jtp(self.topics.torso_l_j))
             self.rate.sleep()
 
         response.demo.type_demo = Demonstration.TYPE_DEMO_NORMAL

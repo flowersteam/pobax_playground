@@ -7,6 +7,8 @@ from rospkg import RosPack
 import os
 from thr_interaction_controller.srv import *
 from pobax_playground.srv import *
+from std_msgs.msg import UInt8
+from trajectory_msgs.msg import JointTrajectory
 
 '''
 class Torso_controller(object):
@@ -56,7 +58,7 @@ class Perception_controller(object):
         with open(join(self.rospack.get_path('pobax_playground'), 'config', 'perception.json')) as f:
             self.params = json.load(f)
 
-    def record(self, human_demo, nb_points):
+    def record(self, nb_points):
         call = self.services['record']['call']
         return call(RecordRequest(nb_points=UInt8(data=nb_points)))
 
@@ -69,7 +71,7 @@ class Torso_controller(object):
             rospy.wait_for_service(service['name'])
             service['call'] = rospy.ServiceProxy(service['name'], service['type'])
 
-    def reset(self, slow):
+    def reset(self, slow=False):
         call = self.services['reset_torso']['call']
         return call(ResetRequest(slow=slow))
 
@@ -119,12 +121,12 @@ class Controller(object):
         self.torso = Torso_controller()
         self.baxter = Baxter_controller()
         self.learning = Learning_controller()
+        self.perception = Perception_controller()
         rospy.loginfo('Controller fully started!')
 
 
 
     def run(self):
-        #self.torso.go_to_rest()
         print "controller node up and running"
         nb_iterations = rospy.get_param('/pobax_playground/iterations')
         self.iteration = 0
@@ -138,13 +140,15 @@ class Controller(object):
                 #self.torso.set_torque_max(15)
                 #self.recorder.record(task, method, trial, iteration)
                 self.torso.execute_trajectory(trajectory)  # TODO: blocking, non-blocking, action server?
-                #recording = self.perception.record(human_demo=False, nb_points=self.params['nb_points'])
-                #recording.demo.torso_demonstration = JointTrajectory()
+                recording = self.perception.record(nb_points=self.params['nb_points'])
+                recording.demo.torso_demonstration = JointTrajectory()
                 #self.torso.set_torque_max(80)
-                #self.learning.perceive("Calling Percieve, TODO implement demonstration")
-                rospy.sleep(5)
-                print("test")
-                self.baxter.send_command("r")
+                print type(recording.demo)
+                self.torso.reset()
+                #rospy.sleep(5)
+                #print("test")
+                #self.baxter.send_command("r")
+                self.learning.perceive(recording.demo)
                 self.iteration += 1
         finally:
             pass
