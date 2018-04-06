@@ -5,5 +5,6 @@
   "choice_eps": 0.2,
   "publish_rate": 4,
   "enable_hand": true,
-  "normalize_interests": true
+  "normalize_interests": true,
+  "sensory_state_size": 132
 }

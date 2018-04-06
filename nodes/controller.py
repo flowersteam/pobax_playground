@@ -134,16 +134,11 @@ class Controller(object):
             while not rospy.is_shutdown() and self.iteration < nb_iterations:
                 rospy.logwarn("#### Iteration {}/{}".format(self.iteration, nb_iterations))
                 #trajectory = self.learning.produce(skill_to_demonstrate=self.demonstrate).torso_trajectory
-                
                 trajectory = self.learning.produce().torso_trajectory
-                print "trajectory produced" 
-                #self.torso.set_torque_max(15)
                 #self.recorder.record(task, method, trial, iteration)
-                self.torso.execute_trajectory(trajectory)  # TODO: blocking, non-blocking, action server?
+                self.torso.execute_trajectory(trajectory)
                 recording = self.perception.record(nb_points=self.params['nb_points'])
                 recording.demo.torso_demonstration = JointTrajectory()
-                #self.torso.set_torque_max(80)
-                print type(recording.demo)
                 self.torso.reset()
                 #rospy.sleep(5)
                 #print("test")

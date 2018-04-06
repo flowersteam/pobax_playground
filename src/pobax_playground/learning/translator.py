@@ -19,9 +19,11 @@ class EnvironmentTranslator(object):
         self.rospack = RosPack()
         with open(join(self.rospack.get_path('pobax_playground'), 'config', 'bounds.json')) as f:
             self.bounds = json.load(f)
-        """TODO ADD ON SENSORY BOUNDS"""
-        self.sensory_state_size = 132 #TODO CHANGE TO REAL SENSORY STATE
+        with open(join(self.rospack.get_path('pobax_playground'), 'config', 'learning.json')) as f:
+            self.learning_params = json.load(f)
+        self.sensory_state_size = self.learning_params['sensory_state_size']
 
+        """TODO ADD ON SENSORY BOUNDS"""
         self.goal_spaces = ['hand','culbuto_1']
         self.bounds_motors_min = np.array([float(bound[0]) for bound in self.bounds['motors']['positions']])
         self.bounds_motors_max = np.array([float(bound[1]) for bound in self.bounds['motors']['positions']])

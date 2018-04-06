@@ -6,9 +6,10 @@ from learning_module import LearningModule
 
 
 class Supervisor(object):
-    def __init__(self, config, n_motor_babbling=0, explo_noise=0.1, choice_eps=0.2, enable_hand=True, normalize_interests=True):
+    def __init__(self, config, sensory_state_size, n_motor_babbling=0, explo_noise=0.1, choice_eps=0.2, enable_hand=True, normalize_interests=True):
         
         self.config = config
+        self.sensory_state_size = sensory_state_size
         self.n_motor_babbling = n_motor_babbling
         self.explo_noise = explo_noise
         self.choice_eps = choice_eps,

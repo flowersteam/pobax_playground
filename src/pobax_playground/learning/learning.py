@@ -12,8 +12,9 @@ from core.supervisor import Supervisor
 
 
 class Learning(object):
-    def __init__(self, config, n_motor_babbling=0, explo_noise=0.1, choice_eps=0.2, enable_hand=True, normalize_interests=True):
+    def __init__(self, config, sensory_state_size, n_motor_babbling=0, explo_noise=0.1, choice_eps=0.2, enable_hand=True, normalize_interests=True):
         self.config = config
+        self.sensory_state_size = sensory_state_size
         self.n_motor_babbling = n_motor_babbling
         self.explo_noise = explo_noise
         self.choice_eps = choice_eps
@@ -26,7 +27,7 @@ class Learning(object):
             
     def perceive(self, s):
         # Perception of environment when m was produced
-        assert len(s) == 132, len(s)
+        assert len(s) == self.sensory_state_size, len(s)
         return self.agent.perceive(s)
             
     def get_iterations(self): return self.agent.t
@@ -47,7 +48,8 @@ class Learning(object):
             pickle.dump(data, f)
     
     def start(self):
-        self.agent = Supervisor(self.config, 
+        self.agent = Supervisor(self.config,
+                                sensory_state_size=self.sensory_state_size, 
                                 n_motor_babbling=self.n_motor_babbling, 
                                 explo_noise=self.explo_noise, 
                                 choice_eps=self.choice_eps,

@@ -22,7 +22,8 @@ class LearningNode(object):
             self.params = json.load(f)
 
         self.translator = EnvironmentTranslator()
-        self.learning = Learning(self.translator.config, 
+        self.learning = Learning(self.translator.config,
+                                 sensory_state_size=self.params["sensory_state_size"],
                                  n_motor_babbling=self.params["n_motor_babbling"], 
                                  explo_noise=self.params["explo_noise"], 
                                  choice_eps=self.params["choice_eps"], 
