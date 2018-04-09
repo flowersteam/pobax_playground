@@ -89,20 +89,27 @@ class Torso_controller(object):
 class Baxter_controller(object):
 
     def __init__(self):
-        rospy.wait_for_service('baxter_command')
-        self.baxter_command = rospy.ServiceProxy('baxter_command', BaxterCommand)
+        self.services = {'command': {'name': '/pobax_playground/baxter/command', 'type': BaxterCommand}}
+        for service_name, service in self.services.items():
+            rospy.loginfo("Controller is waiting service {}...".format(service['name']))
+            rospy.wait_for_service(service['name'])
+            service['call'] = rospy.ServiceProxy(service['name'], service['type'])
 
     def send_command(self,cmd):
         try:
-            resp1 = self.baxter_command(cmd)
+            resp1 = self.services['command']['call'](cmd)
             print resp1
         except rospy.ServiceException, e:
             print "Service call failed: %s"%e
 
     def replace(self):
         rospy.loginfo('replacing culbuto using baxter...')
-        self.send_command("r")
-        rospy.sleep(5)
+        self.services['command']['call']('r')
+        for i in range(5):
+            #state = self.run_decision_client.get_state()
+            #print state
+            print "test"
+            rospy.sleep(1)
         rospy.loginfo('replaced !')
 
 
@@ -132,7 +139,7 @@ class Controller(object):
         with open(join(self.rospack.get_path('pobax_playground'), 'config', 'general.json')) as f:
             self.params = json.load(f)
 
-        self.torso = Torso_controller()
+        #self.torso = Torso_controller()
         self.baxter = Baxter_controller()
         self.learning = Learning_controller()
         self.perception = Perception_controller()
@@ -148,10 +155,10 @@ class Controller(object):
             while not rospy.is_shutdown() and self.iteration < nb_iterations:
                 rospy.logwarn("#### Iteration {}/{}".format(self.iteration, nb_iterations))
                 trajectory = self.learning.produce().torso_trajectory
-                self.torso.execute_trajectory(trajectory)
+                #self.torso.execute_trajectory(trajectory)
                 recording = self.perception.record(nb_points=self.params['nb_points'])
                 recording.demo.torso_demonstration = JointTrajectory()
-                self.torso.reset()
+                #self.torso.reset()
                 self.learning.perceive(recording.demo)
 
                 #checks wether baxter must replace culbuto at Torso's arm reach
