@@ -1,3 +1,7 @@
 {
-  "nb_points": 30
+  "nb_points": 30,
+  "baxter_safety_bound_x": 0.450,
+  "baxter_safety_bound_z": -0.224,
+  "baxter_grasp_bound_x": 0.380,
+  "baxter_grasp_bound_z": -0.180
 }

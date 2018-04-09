@@ -47,7 +47,7 @@ class TopicAggregator(object):
     @property
     def culbuto_1(self):
         try:
-            position,_ = self.listener.lookupTransform('/base','/culbuto/1', rospy.Time(0))
+            position,_ = self.listener.lookupTransform('/optitrack_frame','/culbuto/1', rospy.Time(0))
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
             rospy.logwarn("ERROR TF TRANSFORM IN AGGREGATOR")
         pose = PoseStamped()

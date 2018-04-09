@@ -48,7 +48,8 @@ class Torso_controller(object):
 '''
 class Perception_controller(object):
     def __init__(self):
-        self.services = {'record': {'name': '/pobax_playground/perception/record', 'type': Record}}
+        self.services = {'record': {'name': '/pobax_playground/perception/record', 'type': Record},
+                         'get': {'name': '/pobax_playground/perception/get', 'type': GetSensorialState}}
         for service_name, service in self.services.items():
             rospy.loginfo("Controller is waiting service {}...".format(service['name']))
             rospy.wait_for_service(service['name'])
@@ -61,6 +62,12 @@ class Perception_controller(object):
     def record(self, nb_points):
         call = self.services['record']['call']
         return call(RecordRequest(nb_points=UInt8(data=nb_points)))
+
+    def get(self):
+        call = self.services['get']['call']
+        return call(GetSensorialStateRequest())
+
+
 
 class Torso_controller(object):
     def __init__(self):
@@ -91,6 +98,13 @@ class Baxter_controller(object):
             print resp1
         except rospy.ServiceException, e:
             print "Service call failed: %s"%e
+
+    def replace(self):
+        rospy.loginfo('replacing culbuto using baxter...')
+        self.send_command("r")
+        rospy.sleep(5)
+        rospy.loginfo('replaced !')
+
 
 class Learning_controller(object):
 
@@ -133,17 +147,20 @@ class Controller(object):
         try:
             while not rospy.is_shutdown() and self.iteration < nb_iterations:
                 rospy.logwarn("#### Iteration {}/{}".format(self.iteration, nb_iterations))
-                #trajectory = self.learning.produce(skill_to_demonstrate=self.demonstrate).torso_trajectory
                 trajectory = self.learning.produce().torso_trajectory
-                #self.recorder.record(task, method, trial, iteration)
                 self.torso.execute_trajectory(trajectory)
                 recording = self.perception.record(nb_points=self.params['nb_points'])
                 recording.demo.torso_demonstration = JointTrajectory()
                 self.torso.reset()
-                #rospy.sleep(5)
-                #print("test")
-                #self.baxter.send_command("r")
                 self.learning.perceive(recording.demo)
+
+                #checks wether baxter must replace culbuto at Torso's arm reach
+                #TODO IMPLEMENT TORSO SAFE POSE
+                culbuto = self.perception.get().state.culbuto_1
+                if culbuto.pose.position.x < self.params['baxter_grasp_bound_x']:
+                    self.baxter.replace()
+
+
                 self.iteration += 1
         finally:
             pass
