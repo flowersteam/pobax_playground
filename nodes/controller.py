@@ -104,27 +104,40 @@ class Baxter_controller(object):
         # Detects when a new command can be issued by checking when a new result is produced
         self.old_result_id = self.services['get_result']['call']().result.status.goal_id.id      
         self.services['command']['call']('g1')
-        for i in range(24):
-            result_id = self.services['get_result']['call']().result.status.goal_id.id
+        for i in range(100):
+            result = self.services['get_result']['call']().result
+            result_id = result.status.goal_id.id
             if result_id != self.old_result_id: # If previous command finished
                 self.old_result_id = result_id
+                result_status = result.status.status
                 break
             rospy.sleep(0.5)
+        if result_status != 3:
+            raw_input("Baxter could not grasp culbuto, please help him and press enter")
         self.services['command']['call']('p1')
-        for i in range(24):
-            result_id = self.services['get_result']['call']().result.status.goal_id.id
+        for i in range(100):
+            result = self.services['get_result']['call']().result
+            result_id = result.status.goal_id.id
             if result_id != self.old_result_id: # If previous command finished
                 self.old_result_id = result_id
+                result_status = result.status.status
                 break
             rospy.sleep(0.5)
-        self.services['command']['call']('r')
-        for i in range(24):
-            result_id = self.services['get_result']['call']().result.status.goal_id.id
-            if result_id != self.old_result_id: # If previous command finished
-                self.old_result_id = result_id
-                break
-            rospy.sleep(0.5)
+        if result_status != 3:
+            raw_input("Baxter could not place culbuto, please help him and press enter")
         rospy.loginfo('replaced !')
+
+    def reset(self,blocking=True):
+        rospy.loginfo('Resetting Baxter')
+        self.old_result_id = self.services['get_result']['call']().result.status.goal_id.id
+        self.services['command']['call']('r')
+        if blocking:
+            for i in range(100):
+                result_id = self.services['get_result']['call']().result.status.goal_id.id
+                if result_id != self.old_result_id: # If previous command finished
+                    self.old_result_id = result_id
+                    break
+                rospy.sleep(0.5)
 
 
 class Learning_controller(object):
@@ -162,7 +175,7 @@ class Controller(object):
 
 
     def run(self):
-        print "controller node up and running"
+        rospy.loginfo("controller node up and running")
         nb_iterations = rospy.get_param('/pobax_playground/iterations')
         self.iteration = 0
         try:
@@ -177,8 +190,11 @@ class Controller(object):
                 if culbuto.pose.position.x < self.params['baxter_grasp_bound_x']:
                     self.torso.set_safe_pose() #should be a blocking call
                     self.baxter.replace()
-
-                self.torso.reset(True)
+                    self.baxter.reset(blocking=False)
+                    self.torso.reset(True)
+                    
+                else:
+                    self.torso.reset(True)
                 self.learning.perceive(recording.demo)
                 self.iteration += 1
         finally:
