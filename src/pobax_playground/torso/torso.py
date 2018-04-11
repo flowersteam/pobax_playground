@@ -69,8 +69,8 @@ class Torso(object):
             rospy.logerr("Torso failed to init: {}".format(e))
             return None
         
-        self.primitive_head = UpperBodyIdleMotion(self.torso, 15)
-        self.primitive_right = HeadIdleMotion(self.torso, 15)
+        self.primitive_head = HeadIdleMotion(self.torso, 15)
+        self.primitive_right = UpperBodyIdleMotion(self.torso, 15)
         self.go_to([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 4)
         self.primitive_head.start()
         self.primitive_right.start()
@@ -83,6 +83,7 @@ class Torso(object):
             self.srv_reset = rospy.Service('/pobax_playground/torso/reset', Reset, self._cb_reset)
             self.srv_execute = rospy.Service('/pobax_playground/torso/execute', ExecuteTorsoTrajectory, self._cb_execute)
             self.srv_set_compliant = rospy.Service('/pobax_playground/torso/set_compliant', SetTorsoCompliant, self._cb_set_compliant)
+            self.srv_set_safe = rospy.Service('pobax_playground/torso/set_safe', SetTorsoSafe,self._cb_set_safe)
 
             rospy.loginfo("Torso is ready to execute trajectories at {} Hz ".format(self.execute_rate_hz))
 
@@ -119,7 +120,7 @@ class Torso(object):
         thread = Thread(target=self.execute, args=[request.torso_trajectory])
         thread.daemon = True
         thread.start()
-        return ExecuteTorsoTrajectoryResponse()
+        return ExecuteTorsoTrajectoryResponse()      
 
     def execute(self, trajectory):
         with self.robot_lock:
@@ -131,6 +132,7 @@ class Torso(object):
                     break
                 self.torso.goto_position(dict(zip(trajectory.joint_names, point.positions)), 1.05/self.execute_rate_hz)
                 self.execute_rate.sleep()
+            self.in_rest_pose = False
             rospy.loginfo("Trajectory ended!")
 
     def _cb_set_compliant(self, request):
@@ -142,6 +144,16 @@ class Torso(object):
         rospy.loginfo("Torso left arm now {}".format('compliant' if compliant else 'rigid'))
         for m in self.torso.l_arm:
             m.compliant = compliant
+
+    def go_to_safe(self,duration=2):
+        if not self.in_rest_pose:
+            self.go_to_rest(False)
+        self.primitive_head.pause()
+        self.primitive_right.stop() #dirty workaround to pause this primitive
+        rospy.sleep(2)
+        self.go_to([30,-20,0,0,0,20,0,70,0,0,20,0,-60,0,0],duration)
+        self.primitive_head.resume()
+        self.primitive_right = UpperBodyIdleMotion(self.torso, 15) #again, dirty
 
     def _cb_reset(self, request):
         rospy.loginfo("Resetting Torso{}...".format(" in slow mode" if request.slow else ""))
@@ -157,3 +169,11 @@ class Torso(object):
                 self.left_arm_compliant(False)
                 self.go_to_rest(False)
         return ResetResponse()
+
+    def _cb_set_safe(self, request):
+        rospy.loginfo("Setting Torso in safe pose")
+        with self.robot_lock:
+                self.left_arm_compliant(False)
+                self.go_to_safe()
+        return SetTorsoSafeResponse()   
+  

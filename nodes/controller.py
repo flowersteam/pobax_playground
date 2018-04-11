@@ -36,12 +36,7 @@ class Torso_controller(object):
         self.torso.goto_position(motors_dict, duration)
         rospy.sleep(duration)
 
-    def go_to_safe(self,duration=2):
-        #todo check if in rest before
-        if not self.in_rest_pose:
-            print("go_to_safe position failed, torso wasn't in rest pose")
-            return
-        go_to([30,-20,0,0,0,20,0,70,0,0,20,0,-40,0,0],duration)
+    
 
     def close(self):
         self.torso.close()
@@ -70,7 +65,8 @@ class Perception_controller(object):
 class Torso_controller(object):
     def __init__(self):
         self.services = {'exec_torso': {'name': '/pobax_playground/torso/execute', 'type': ExecuteTorsoTrajectory},
-                         'reset_torso': {'name': '/pobax_playground/torso/reset', 'type': Reset}}
+                         'reset_torso': {'name': '/pobax_playground/torso/reset', 'type': Reset},
+                         'safe_torso': {'name': '/pobax_playground/torso/set_safe', 'type': SetTorsoSafe}}
         for service_name, service in self.services.items():
             rospy.loginfo("Controller is waiting service {}...".format(service['name']))
             rospy.wait_for_service(service['name'])
@@ -83,6 +79,9 @@ class Torso_controller(object):
     def execute_trajectory(self, trajectory):
         call = self.services['exec_torso']['call']
         return call(ExecuteTorsoTrajectoryRequest(torso_trajectory=trajectory))
+
+    def set_safe_pose(self):
+        return self.services['safe_torso']['call']()
 
 class Baxter_controller(object):
     def __init__(self):
@@ -110,7 +109,6 @@ class Baxter_controller(object):
             if result_id != self.old_result_id: # If previous command finished
                 self.old_result_id = result_id
                 break
-            print result_id
             rospy.sleep(0.5)
         self.services['command']['call']('p1')
         for i in range(24):
@@ -118,7 +116,6 @@ class Baxter_controller(object):
             if result_id != self.old_result_id: # If previous command finished
                 self.old_result_id = result_id
                 break
-            print result_id
             rospy.sleep(0.5)
         self.services['command']['call']('r')
         for i in range(24):
@@ -126,9 +123,7 @@ class Baxter_controller(object):
             if result_id != self.old_result_id: # If previous command finished
                 self.old_result_id = result_id
                 break
-            print result_id
             rospy.sleep(0.5)
-        
         rospy.loginfo('replaced !')
 
 
@@ -177,16 +172,14 @@ class Controller(object):
                 self.torso.execute_trajectory(trajectory)
                 recording = self.perception.record(nb_points=self.params['nb_points'])
                 recording.demo.torso_demonstration = JointTrajectory()
-                self.torso.reset()
-                self.learning.perceive(recording.demo)
-
                 #checks wether baxter must replace culbuto at Torso's arm reach
-                #TODO IMPLEMENT TORSO SAFE POSE
                 culbuto = self.perception.get().state.culbuto_1
                 if culbuto.pose.position.x < self.params['baxter_grasp_bound_x']:
+                    self.torso.set_safe_pose() #should be a blocking call
                     self.baxter.replace()
 
-
+                self.torso.reset(True)
+                self.learning.perceive(recording.demo)
                 self.iteration += 1
         finally:
             pass
