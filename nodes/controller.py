@@ -10,37 +10,6 @@ from pobax_playground.srv import *
 from std_msgs.msg import UInt8
 from trajectory_msgs.msg import JointTrajectory
 
-'''
-class Torso_controller(object):
-    self.angle_limits_ext_subl l_arm = [(-50,20),(-10,50),(-30,55),(-30,20),(0,80)]
-
-    def __init__(self):
-        self.rospack = RosPack()
-        robot_config = join(self.rospack.get_path('pobax_playground'), 'config', 'torso.json')
-        self.torso = from_json(robot_config)
-        self.torso.compliant = False
-        self.go_to_rest(slow=True)
-        self.set_torque_max(20)
-    
-    def set_torque_max(self, torque_max=100):
-        for m in self.torso.motors:
-            m.torque_limit = torque_max
-
-    def go_to_rest(self, slow=True):
-        duration = 2 if slow else 0.25
-        self.go_to([0 for i in range(len(torso.motors))], duration)
-        self.in_rest_pose = True
-
-    def go_to(self, motors, duration):
-        motors_dict = dict(zip([m.name for m in self.torso.motors], motors))
-        self.torso.goto_position(motors_dict, duration)
-        rospy.sleep(duration)
-
-    
-
-    def close(self):
-        self.torso.close()
-'''
 class Perception_controller(object):
     def __init__(self):
         self.services = {'record': {'name': '/pobax_playground/perception/record', 'type': Record},
@@ -84,13 +53,15 @@ class Torso_controller(object):
         return self.services['safe_torso']['call']()
 
 class Baxter_controller(object):
-    def __init__(self):
+    def __init__(self,result_rate):
         self.services = {'command': {'name': '/pobax_playground/baxter/command', 'type': BaxterCommand},
                          'get_result': {'name': '/pobax_playground/baxter/get_result', 'type': BaxterResult}}
         for service_name, service in self.services.items():
             rospy.loginfo("Controller is waiting service {}...".format(service['name']))
             rospy.wait_for_service(service['name'])
             service['call'] = rospy.ServiceProxy(service['name'], service['type'])
+
+        self.rate = rospy.Rate(result_rate)
 
     def send_command(self,cmd):
         try:
@@ -99,32 +70,30 @@ class Baxter_controller(object):
         except rospy.ServiceException, e:
             print "Service call failed: %s"%e
 
+    #wait for newly published result and returns status
+    def  wait_for_result(self):
+        rospy.loginfo("Waiting for baxter to finish current action ...")
+        while not rospy.is_shutdown():
+            result = self.services['get_result']['call']().result
+            result_id = result.status.goal_id.id
+            if result_id != self.old_result_id: # If previous command finished
+                self.old_result_id = result_id
+                rospy.loginfo("Baxter's Action finished!")
+                return result.status.status
+            self.rate.sleep()
+
     def replace(self):
         rospy.loginfo('replacing culbuto using baxter...')
         # Detects when a new command can be issued by checking when a new result is produced
         self.old_result_id = self.services['get_result']['call']().result.status.goal_id.id      
         self.services['command']['call']('g1')
-        for i in range(100):
-            result = self.services['get_result']['call']().result
-            result_id = result.status.goal_id.id
-            if result_id != self.old_result_id: # If previous command finished
-                self.old_result_id = result_id
-                result_status = result.status.status
-                break
-            rospy.sleep(0.5)
+        result_status = self.wait_for_result()      
         if result_status != 3:
             raw_input("Baxter could not grasp culbuto, please help him and press enter")
+
         self.services['command']['call']('p1')
-        for i in range(100):
-            result = self.services['get_result']['call']().result
-            result_id = result.status.goal_id.id
-            if result_id != self.old_result_id: # If previous command finished
-                self.old_result_id = result_id
-                result_status = result.status.status
-                break
-            rospy.sleep(0.5)
-        if result_status != 3:
-            raw_input("Baxter could not place culbuto, please help him and press enter")
+        result_status = self.wait_for_result()
+        
         rospy.loginfo('replaced !')
 
     def reset(self,blocking=True):
@@ -132,12 +101,9 @@ class Baxter_controller(object):
         self.old_result_id = self.services['get_result']['call']().result.status.goal_id.id
         self.services['command']['call']('r')
         if blocking:
-            for i in range(100):
-                result_id = self.services['get_result']['call']().result.status.goal_id.id
-                if result_id != self.old_result_id: # If previous command finished
-                    self.old_result_id = result_id
-                    break
-                rospy.sleep(0.5)
+            result_status = self.wait_for_result()
+            if result_status != 3:
+                raw_input("Baxter could not reset, please help him and press enter")
 
 
 class Learning_controller(object):
@@ -167,7 +133,7 @@ class Controller(object):
             self.params = json.load(f)
 
         self.torso = Torso_controller()
-        self.baxter = Baxter_controller()
+        self.baxter = Baxter_controller(self.params["baxter_result_refresh_rate"])
         self.learning = Learning_controller()
         self.perception = Perception_controller()
         rospy.loginfo('Controller fully started!')

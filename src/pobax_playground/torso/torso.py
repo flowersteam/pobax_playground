@@ -44,11 +44,10 @@ class Torso(object):
 
     def go_to_rest(self, slow):
         with self.robot_lock:
-            duration = 2 if slow else 0.25
+            duration = 1 if slow else 0.25
             self.set_torque_limits(60)
-            self.torso.goto_position({'l_shoulder_y': 0, 'l_shoulder_x': 0, 'l_elbow_y': 0, 'l_claw_x': 0}, duration)
-            rospy.sleep(duration)
-            self.go_to([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], duration)
+            #self.torso.goto_position({'l_shoulder_y': 0, 'l_shoulder_x': 0, 'l_elbow_y': 0, 'l_claw_x': 0}, duration)
+            self.go_to([0,0,0,0,0,10,60,60,0,0,0,0,0,0,0], duration)
             self.torso.motors[4].compliant = True  # This motor overheats a lot
             self.in_rest_pose = True
             self.set_torque_limits()
@@ -71,7 +70,7 @@ class Torso(object):
         
         self.primitive_head = HeadIdleMotion(self.torso, 15)
         self.primitive_right = UpperBodyIdleMotion(self.torso, 15)
-        self.go_to([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 4)
+        self.go_to([0,0,0,0,0,10,60,60,0,0,0,0,0,0,0], 4)
         self.primitive_head.start()
         self.primitive_right.start()
 
@@ -145,12 +144,11 @@ class Torso(object):
         for m in self.torso.l_arm:
             m.compliant = compliant
 
-    def go_to_safe(self,duration=2):
+    def go_to_safe(self,duration=1):
         if not self.in_rest_pose:
             self.go_to_rest(False)
         self.primitive_head.pause()
         self.primitive_right.stop() #dirty workaround to pause this primitive
-        rospy.sleep(2)
         self.go_to([30,-20,0,0,0,20,0,70,0,0,20,0,-60,0,0],duration)
         self.primitive_head.resume()
         self.primitive_right = UpperBodyIdleMotion(self.torso, 15) #again, dirty
@@ -161,8 +159,6 @@ class Torso(object):
         if request.slow:
             with self.robot_lock:
                 self.left_arm_compliant(False)
-                system('beep')
-                rospy.sleep(1)
                 self.go_to_rest(True)
         else:
             with self.robot_lock:
