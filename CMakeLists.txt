@@ -16,6 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   trajectory_msgs
   message_runtime
+  thr_infrastructure_msgs
 )
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -69,6 +70,7 @@ add_service_files(
   SetTorsoCompliant.srv
   Record.srv
   GetSensorialState.srv
+  BaxterResult.srv
 )
 
 ## Generate actions in the 'action' folder
@@ -85,6 +87,7 @@ generate_messages(
   geometry_msgs
   sensor_msgs
   trajectory_msgs
+  thr_infrastructure_msgs
 )
 
 ################################################

@@ -67,8 +67,6 @@ class Perception_controller(object):
         call = self.services['get']['call']
         return call(GetSensorialStateRequest())
 
-
-
 class Torso_controller(object):
     def __init__(self):
         self.services = {'exec_torso': {'name': '/pobax_playground/torso/execute', 'type': ExecuteTorsoTrajectory},
@@ -87,9 +85,9 @@ class Torso_controller(object):
         return call(ExecuteTorsoTrajectoryRequest(torso_trajectory=trajectory))
 
 class Baxter_controller(object):
-
     def __init__(self):
-        self.services = {'command': {'name': '/pobax_playground/baxter/command', 'type': BaxterCommand}}
+        self.services = {'command': {'name': '/pobax_playground/baxter/command', 'type': BaxterCommand},
+                         'get_result': {'name': '/pobax_playground/baxter/get_result', 'type': BaxterResult}}
         for service_name, service in self.services.items():
             rospy.loginfo("Controller is waiting service {}...".format(service['name']))
             rospy.wait_for_service(service['name'])
@@ -104,12 +102,33 @@ class Baxter_controller(object):
 
     def replace(self):
         rospy.loginfo('replacing culbuto using baxter...')
+        # Detects when a new command can be issued by checking when a new result is produced
+        self.old_result_id = self.services['get_result']['call']().result.status.goal_id.id      
+        self.services['command']['call']('g1')
+        for i in range(24):
+            result_id = self.services['get_result']['call']().result.status.goal_id.id
+            if result_id != self.old_result_id: # If previous command finished
+                self.old_result_id = result_id
+                break
+            print result_id
+            rospy.sleep(0.5)
+        self.services['command']['call']('p1')
+        for i in range(24):
+            result_id = self.services['get_result']['call']().result.status.goal_id.id
+            if result_id != self.old_result_id: # If previous command finished
+                self.old_result_id = result_id
+                break
+            print result_id
+            rospy.sleep(0.5)
         self.services['command']['call']('r')
-        for i in range(5):
-            #state = self.run_decision_client.get_state()
-            #print state
-            print "test"
-            rospy.sleep(1)
+        for i in range(24):
+            result_id = self.services['get_result']['call']().result.status.goal_id.id
+            if result_id != self.old_result_id: # If previous command finished
+                self.old_result_id = result_id
+                break
+            print result_id
+            rospy.sleep(0.5)
+        
         rospy.loginfo('replaced !')
 
 
@@ -139,7 +158,7 @@ class Controller(object):
         with open(join(self.rospack.get_path('pobax_playground'), 'config', 'general.json')) as f:
             self.params = json.load(f)
 
-        #self.torso = Torso_controller()
+        self.torso = Torso_controller()
         self.baxter = Baxter_controller()
         self.learning = Learning_controller()
         self.perception = Perception_controller()
@@ -155,10 +174,10 @@ class Controller(object):
             while not rospy.is_shutdown() and self.iteration < nb_iterations:
                 rospy.logwarn("#### Iteration {}/{}".format(self.iteration, nb_iterations))
                 trajectory = self.learning.produce().torso_trajectory
-                #self.torso.execute_trajectory(trajectory)
+                self.torso.execute_trajectory(trajectory)
                 recording = self.perception.record(nb_points=self.params['nb_points'])
                 recording.demo.torso_demonstration = JointTrajectory()
-                #self.torso.reset()
+                self.torso.reset()
                 self.learning.perceive(recording.demo)
 
                 #checks wether baxter must replace culbuto at Torso's arm reach
