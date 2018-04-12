@@ -28,7 +28,6 @@ class Supervisor(object):
             
         self.mid_control = ''
         
-            
         # Define motor and sensory spaces:
         m_ndims = self.conf.m_ndims # number of motor parameters
         
@@ -36,38 +35,25 @@ class Supervisor(object):
         self.c_dims = range(m_ndims, m_ndims+3)
         self.s_hand = range(m_ndims+3, m_ndims+33)
         self.s_culbuto_1 = range(m_ndims+33, m_ndims+63)
-        #self.s_joystick_2 = range(m_ndims+52, m_ndims+72)
-        #self.s_ergo = range(m_ndims+72, m_ndims+92)
-        #self.s_ball = range(m_ndims+92, m_ndims+112)
-        #self.s_light = range(m_ndims+112, m_ndims+122)
-        #self.s_sound = range(m_ndims+122, m_ndims+132)
-        
+      
         self.s_spaces = dict(s_hand=self.s_hand, 
                              s_culbuto_1=self.s_culbuto_1)
         
-        #print
-        #print "Initialize agent with spaces:"
-        #print "Motor", self.m_space
-        #print "Context", self.c_dims
-        #print "Hand", self.s_hand
-        #print "Joystick1", self.s_joystick_1
-        #print "Joystick2", self.s_joystick_2
-        #print "Ergo", self.s_ergo
-        #print "Ball", self.s_ball
-        #print "Light", self.s_light
-        #print "Sound", self.s_sound
-        
-
         # Create the 6 learning modules:
-        self.modules['mod1'] = LearningModule("mod1", self.m_space, self.s_hand, self.conf, explo_noise=self.explo_noise, normalize_interests=self.normalize_interests)
-        #self.modules['mod2'] = LearningModule("mod2", self.m_space, self.s_joystick_1, self.conf, explo_noise=self.explo_noise, normalize_interests=self.normalize_interests)
-        self.modules['mod2'] = LearningModule("mod4", self.m_space, self.c_dims + self.s_culbuto_1, self.conf, context_mode=dict(mode='mcs', context_n_dims=3, context_sensory_bounds=[[-2.,2.],[-2.,2.],[-2.,2.]]), explo_noise=self.explo_noise, normalize_interests=self.normalize_interests)
-        #self.modules['mod3'] = LearningModule("mod3", self.m_space, self.s_joystick_2, self.conf, explo_noise=self.explo_noise, normalize_interests=self.normalize_interests)
-        #self.modules['mod4'] = LearningModule("mod4", self.m_space, [self.c_dims[0]] + self.s_ergo, self.conf, context_mode=dict(mode='mcs', context_n_dims=1, context_sensory_bounds=[[-1.],[1.]]), explo_noise=self.explo_noise, normalize_interests=self.normalize_interests)
-        #self.modules['mod5'] = LearningModule("mod5", self.m_space, self.c_dims + self.s_ball, self.conf, context_mode=dict(mode='mcs', context_n_dims=2, context_sensory_bounds=[[-1., -1.],[1., 1.]]), explo_noise=self.explo_noise, normalize_interests=self.normalize_interests)
-        #self.modules['mod6'] = LearningModule("mod6", self.m_space, self.c_dims + self.s_light, self.conf, context_mode=dict(mode='mcs', context_n_dims=2, context_sensory_bounds=[[-1., -1.],[1., 1.]]), explo_noise=self.explo_noise, normalize_interests=self.normalize_interests)
-        #self.modules['mod7'] = LearningModule("mod7", self.m_space, self.c_dims + self.s_sound, self.conf, context_mode=dict(mode='mcs', context_n_dims=2, context_sensory_bounds=[[-1., -1.],[1., 1.]]), explo_noise=self.explo_noise, normalize_interests=self.normalize_interests)
-    
+        self.modules['mod1'] = LearningModule("mod1",
+                                              self.m_space, 
+                                              self.s_hand, 
+                                              self.conf, 
+                                              explo_noise=self.explo_noise, 
+                                              normalize_interests=self.normalize_interests)
+        self.modules['mod2'] = LearningModule("mod4",
+                                              self.m_space,
+                                              self.c_dims + self.s_culbuto_1,
+                                              self.conf,
+                                              context_mode=dict(mode='mcs', 
+                                              context_n_dims=3, context_sensory_bounds=[[-2.,2.],[-2.,2.],[-2.,2.]]),
+                                              explo_noise=self.explo_noise,
+                                              normalize_interests=self.normalize_interests)
         self.space2mid = dict(s_hand="mod1",
                               s_culbuto_1="mod2") 
          
@@ -96,8 +82,7 @@ class Supervisor(object):
                 "interests_evolution":self.interests_evolution,
                 "normalized_interests_evolution":self.get_normalized_interests_evolution(),
                 "normalize_interests":self.normalize_interests}
-
-        
+ 
     def forward(self, data, iteration):
         if iteration > len(data["chosen_modules"]):
             print "\nWARNING: asked to restart from iteration", iteration, "but only", len(data["chosen_modules"]), "are available. Restarting from iteration", len(data["chosen_modules"]), "..."
@@ -121,9 +106,7 @@ class Supervisor(object):
                     self.modules[mid].sensorimotor_model.forward(data["sm_data"][mid], iteration)
                     
                 self.modules[mid].interest_model.forward(data["im_data"][mid], self.chosen_modules.count(mid), self.progresses_evolution[mid][-1], self.interests_evolution[mid][-1])
-    
-        
-        
+
     def choose_babbling_module(self, mode='prop'):
         interests = {}
         for mid in self.modules.keys():
@@ -151,7 +134,6 @@ class Supervisor(object):
         
         self.chosen_modules.append(mid)
         return mid
-        
         
     def fast_forward(self, log, forward_im=False):
         #ms_list = []
@@ -192,32 +174,19 @@ class Supervisor(object):
         self.modules[mid].interest_model.current_progress = self.modules[mid].interest_model.current_progress * 1.1
         self.modules[mid].interest_model.current_interest = abs(self.modules[mid].interest_model.current_progress)
             
-            
-    def produce(self, context, space=None):
+    def produce(self, context):
         if self.t < self.n_motor_babbling:
             self.mid_control = None
             self.chosen_modules.append("motor_babbling")
             return self.motor_babbling()
         else:
-            if space is None:
-                if self.have_to_replay_arm_demo is not None:
-                    self.m = self.have_to_replay_arm_demo
-                    self.have_to_replay_arm_demo = None
-                    self.chosen_modules.append("replay_arm_demo")
-                    self.mid_control = None
-                    return self.m
-                mid = self.choose_babbling_module()
-            else:
-                mid = self.space2mid[space]
-                self.chosen_modules.append("forced_" + mid)
-                self.increase_interest(mid)
+            mid = self.choose_babbling_module()
             self.mid_control = mid
             
-            #j_sm = self.modules["mod2"].sensorimotor_model
             if self.modules[mid].context_mode is None:
-                self.m = self.modules[mid].produce(j_sm=None)
+                self.m = self.modules[mid].produce()
             else:
-                self.m = self.modules[mid].produce(context=np.array(context)[range(self.modules[mid].context_mode["context_n_dims"])], j_sm=None)
+                self.m = self.modules[mid].produce(context=np.array(context)[range(self.modules[mid].context_mode["context_n_dims"])])
             return self.m
     
     def inverse(self, mid, s, context):
@@ -232,15 +201,8 @@ class Supervisor(object):
     
     def dist_angle(self, a1, a2): return min(abs(a1 - a2), 2 - abs(a1 - a2))
     
-    def ball_moves(self, s):
-        a1 = s[16]
-        a2 = s[18]
-        # print "ball end angular speed", self.dist_angle(a1, a2)
-        return self.dist_angle(a1, a2) > 0.1
-    
     def perceive(self, s, m_demo=None, j_demo=False):
         s = self.sensory_primitive(s)
-        #print "perceive len(s)", len(s), s[92:112]
         if not hasattr(self, "m"):
             return False
         ms = self.set_ms(self.m, s)
@@ -255,7 +217,6 @@ class Supervisor(object):
                 self.interests_evolution[mid].append(self.modules[mid].interest())
             else:
                 self.interests_evolution[mid].append(0.)
-
         return True
 
     def get_normalized_interests_evolution(self):

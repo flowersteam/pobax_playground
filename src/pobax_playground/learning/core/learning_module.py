@@ -119,7 +119,7 @@ class LearningModule(Agent):
                 m = rand_bounds(self.conf.bounds[:, inf_dims], n), -1
         return m
             
-    def produce(self, context=None, j_sm=None):
+    def produce(self, context=None):
         if self.t < self.motor_babbling_n_iter:
             self.m = self.motor_babbling()
             self.s = np.zeros(len(self.s_space))
@@ -127,11 +127,7 @@ class LearningModule(Agent):
         else:
             self.x = self.choose(context)
             m, idx = self.infer(self.expl_dims, self.inf_dims, self.x)
-            if idx<0:
-                self.y = m
-            else:
-                #print "use demonstrated point ", idx
-                self.y = j_sm.inverse_idx(idx)
+            self.y = m
                 
             #self.m, self.s = self.extract_ms(self.x, self.y)
             self.m, sg = self.y, self.x#self.extract_ms(self.x, self.y)
