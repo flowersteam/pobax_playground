@@ -149,7 +149,7 @@ class Torso(object):
             self.go_to_rest(False)
         self.primitive_head.pause()
         self.primitive_right.stop() #dirty workaround to pause this primitive
-        self.go_to([30,-20,0,0,0,20,0,70,0,0,20,0,-60,0,0],duration)
+        self.go_to([30,-10,0,0,0,10,0,55,0,80,20,0,-40,0,0],duration)
         self.primitive_head.resume()
         self.primitive_right = UpperBodyIdleMotion(self.torso, 15) #again, dirty
 
