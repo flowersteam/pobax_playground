@@ -33,22 +33,17 @@ class Supervisor(object):
         m_ndims = self.conf.m_ndims # number of motor parameters
         
         self.m_space = range(m_ndims)
-        self.c_dims = range(m_ndims, m_ndims+2)
-        self.s_hand = range(m_ndims+2, m_ndims+32)
-        self.s_joystick_1 = range(m_ndims+32, m_ndims+52)
-        self.s_joystick_2 = range(m_ndims+52, m_ndims+72)
-        self.s_ergo = range(m_ndims+72, m_ndims+92)
-        self.s_ball = range(m_ndims+92, m_ndims+112)
-        self.s_light = range(m_ndims+112, m_ndims+122)
-        self.s_sound = range(m_ndims+122, m_ndims+132)
+        self.c_dims = range(m_ndims, m_ndims+3)
+        self.s_hand = range(m_ndims+3, m_ndims+33)
+        self.s_culbuto_1 = range(m_ndims+33, m_ndims+63)
+        #self.s_joystick_2 = range(m_ndims+52, m_ndims+72)
+        #self.s_ergo = range(m_ndims+72, m_ndims+92)
+        #self.s_ball = range(m_ndims+92, m_ndims+112)
+        #self.s_light = range(m_ndims+112, m_ndims+122)
+        #self.s_sound = range(m_ndims+122, m_ndims+132)
         
         self.s_spaces = dict(s_hand=self.s_hand, 
-                             s_joystick_1=self.s_joystick_1, 
-                             s_joystick_2=self.s_joystick_2, 
-                             s_ergo=self.s_ergo, 
-                             s_ball=self.s_ball, 
-                             s_light=self.s_light, 
-                             s_sound=self.s_sound)
+                             s_culbuto_1=self.s_culbuto_1)
         
         #print
         #print "Initialize agent with spaces:"
@@ -65,28 +60,19 @@ class Supervisor(object):
 
         # Create the 6 learning modules:
         self.modules['mod1'] = LearningModule("mod1", self.m_space, self.s_hand, self.conf, explo_noise=self.explo_noise, normalize_interests=self.normalize_interests)
-        self.modules['mod2'] = LearningModule("mod2", self.m_space, self.s_joystick_1, self.conf, explo_noise=self.explo_noise, normalize_interests=self.normalize_interests)
-        self.modules['mod3'] = LearningModule("mod3", self.m_space, self.s_joystick_2, self.conf, explo_noise=self.explo_noise, normalize_interests=self.normalize_interests)
-        self.modules['mod4'] = LearningModule("mod4", self.m_space, [self.c_dims[0]] + self.s_ergo, self.conf, context_mode=dict(mode='mcs', context_n_dims=1, context_sensory_bounds=[[-1.],[1.]]), explo_noise=self.explo_noise, normalize_interests=self.normalize_interests)
-        self.modules['mod5'] = LearningModule("mod5", self.m_space, self.c_dims + self.s_ball, self.conf, context_mode=dict(mode='mcs', context_n_dims=2, context_sensory_bounds=[[-1., -1.],[1., 1.]]), explo_noise=self.explo_noise, normalize_interests=self.normalize_interests)
-        self.modules['mod6'] = LearningModule("mod6", self.m_space, self.c_dims + self.s_light, self.conf, context_mode=dict(mode='mcs', context_n_dims=2, context_sensory_bounds=[[-1., -1.],[1., 1.]]), explo_noise=self.explo_noise, normalize_interests=self.normalize_interests)
-        self.modules['mod7'] = LearningModule("mod7", self.m_space, self.c_dims + self.s_sound, self.conf, context_mode=dict(mode='mcs', context_n_dims=2, context_sensory_bounds=[[-1., -1.],[1., 1.]]), explo_noise=self.explo_noise, normalize_interests=self.normalize_interests)
+        #self.modules['mod2'] = LearningModule("mod2", self.m_space, self.s_joystick_1, self.conf, explo_noise=self.explo_noise, normalize_interests=self.normalize_interests)
+        self.modules['mod2'] = LearningModule("mod4", self.m_space, self.c_dims + self.s_culbuto_1, self.conf, context_mode=dict(mode='mcs', context_n_dims=3, context_sensory_bounds=[[-2.,2.],[-2.,2.],[-2.,2.]]), explo_noise=self.explo_noise, normalize_interests=self.normalize_interests)
+        #self.modules['mod3'] = LearningModule("mod3", self.m_space, self.s_joystick_2, self.conf, explo_noise=self.explo_noise, normalize_interests=self.normalize_interests)
+        #self.modules['mod4'] = LearningModule("mod4", self.m_space, [self.c_dims[0]] + self.s_ergo, self.conf, context_mode=dict(mode='mcs', context_n_dims=1, context_sensory_bounds=[[-1.],[1.]]), explo_noise=self.explo_noise, normalize_interests=self.normalize_interests)
+        #self.modules['mod5'] = LearningModule("mod5", self.m_space, self.c_dims + self.s_ball, self.conf, context_mode=dict(mode='mcs', context_n_dims=2, context_sensory_bounds=[[-1., -1.],[1., 1.]]), explo_noise=self.explo_noise, normalize_interests=self.normalize_interests)
+        #self.modules['mod6'] = LearningModule("mod6", self.m_space, self.c_dims + self.s_light, self.conf, context_mode=dict(mode='mcs', context_n_dims=2, context_sensory_bounds=[[-1., -1.],[1., 1.]]), explo_noise=self.explo_noise, normalize_interests=self.normalize_interests)
+        #self.modules['mod7'] = LearningModule("mod7", self.m_space, self.c_dims + self.s_sound, self.conf, context_mode=dict(mode='mcs', context_n_dims=2, context_sensory_bounds=[[-1., -1.],[1., 1.]]), explo_noise=self.explo_noise, normalize_interests=self.normalize_interests)
     
-        self.space2mid = dict(s_hand="mod1", 
-                             s_joystick_1="mod2", 
-                             s_joystick_2="mod3", 
-                             s_ergo="mod4", 
-                             s_ball="mod5", 
-                             s_light="mod6", 
-                             s_sound="mod7")   
+        self.space2mid = dict(s_hand="mod1",
+                              s_culbuto_1="mod2") 
          
         self.mid2space = dict(mod1="s_hand", 
-                             mod2="s_joystick_1", 
-                             mod3="s_joystick_2", 
-                             mod4="s_ergo", 
-                             mod5="s_ball", 
-                             mod6="s_light", 
-                             mod7="s_sound")
+                              mod2="s_culbuto_1")
         
         for mid in self.modules.keys():
             self.progresses_evolution[mid] = []
@@ -94,7 +80,7 @@ class Supervisor(object):
     
     def mid_to_space(self, mid): return self.mid2space[mid]
     def space_to_mid(self, space): return self.space2mid[space]
-    def get_space_names(self): return ["s_hand", "s_joystick_1", "s_joystick_2", "s_ergo", "s_ball", "s_light", "s_sound"]
+    def get_space_names(self): return ["s_hand", "s_culbuto_1"]
     def get_last_focus(self): return self.mid_to_space(self.mid_control) if self.mid_control else ""
     
     def save(self):
@@ -227,11 +213,11 @@ class Supervisor(object):
                 self.increase_interest(mid)
             self.mid_control = mid
             
-            j_sm = self.modules["mod2"].sensorimotor_model
+            #j_sm = self.modules["mod2"].sensorimotor_model
             if self.modules[mid].context_mode is None:
-                self.m = self.modules[mid].produce(j_sm=j_sm)
+                self.m = self.modules[mid].produce(j_sm=None)
             else:
-                self.m = self.modules[mid].produce(context=np.array(context)[range(self.modules[mid].context_mode["context_n_dims"])], j_sm=j_sm)
+                self.m = self.modules[mid].produce(context=np.array(context)[range(self.modules[mid].context_mode["context_n_dims"])], j_sm=None)
             return self.m
     
     def inverse(self, mid, s, context):
@@ -255,27 +241,12 @@ class Supervisor(object):
     def perceive(self, s, m_demo=None, j_demo=False):
         s = self.sensory_primitive(s)
         #print "perceive len(s)", len(s), s[92:112]
-        if j_demo or self.ball_moves(s[92:112]):
-            time.sleep(3)
-        if m_demo is not None:
-            ms = self.set_ms(m_demo, s)
-            self.update_sensorimotor_models(ms)
-            self.have_to_replay_arm_demo = m_demo
-            self.chosen_modules.append("m_demo")
-        elif j_demo:
-            m0 = [0]*self.conf.m_ndims
-            m0s = self.set_ms(m0, s[:2] + [0]*30 + s[2:])
-            for mid in self.modules.keys():
-                if not (mid == "mod1"): # don't update hand model
-                    self.modules[mid].update_sm(self.modules[mid].get_m(m0s), self.modules[mid].get_s(m0s))
-            self.chosen_modules.append("j_demo")
-        else:
-            if not hasattr(self, "m"):
-                return False
-            ms = self.set_ms(self.m, s)
-            self.update_sensorimotor_models(ms)
-            if self.mid_control is not None:
-                self.modules[self.mid_control].update_im(self.modules[self.mid_control].get_m(ms), self.modules[self.mid_control].get_s(ms))
+        if not hasattr(self, "m"):
+            return False
+        ms = self.set_ms(self.m, s)
+        self.update_sensorimotor_models(ms)
+        if self.mid_control is not None:
+            self.modules[self.mid_control].update_im(self.modules[self.mid_control].get_m(ms), self.modules[self.mid_control].get_s(ms))
         self.t = self.t + 1
         
         for mid in self.modules.keys():
@@ -284,254 +255,11 @@ class Supervisor(object):
                 self.interests_evolution[mid].append(self.modules[mid].interest())
             else:
                 self.interests_evolution[mid].append(0.)
-                
-    
+
         return True
-    
-    
-    def produce_goal(self, context, goal):
-        if goal == "hand_up":
-            self.m = self.move_hand(context, "up")
-        elif goal == "hand_forward":
-            self.m = self.move_hand(context, "forward")
-        elif goal == "hand_right":
-            self.m = self.move_hand(context, "right")
-        elif goal == "hand_left":
-            self.m = self.move_hand(context, "left")
-        elif goal == "joystick_1_forward":        
-            self.m = self.motor_move_joystick_1(context, "forward")
-        elif goal == "joystick_1_right":
-            self.m = self.motor_move_joystick_1(context, "right")
-        elif goal == "joystick_1_left":
-            self.m = self.motor_move_joystick_1(context, "left")
-        elif goal == "joystick_2_forward":
-            self.m = self.motor_move_joystick_2(context, "forward")
-        elif goal == "joystick_2_right":
-            self.m = self.motor_move_joystick_2(context, "right")
-        elif goal == "joystick_2_left":
-            self.m = self.motor_move_joystick_2(context, "left")
-        elif goal == "ergo_right":
-            self.m = self.motor_move_ergo(context, "right")
-        elif goal == "ergo_left":
-            self.m = self.motor_move_ergo(context, "left")
-        elif goal == "ball_right":
-            self.m = self.motor_move_ball(context, "right")
-        elif goal == "ball_left":
-            self.m = self.motor_move_ball(context, "left")
-        elif goal == "light":
-            self.m = self.motor_make_light(context)
-        elif goal == "sound":
-            self.m = self.motor_make_sound(context)
-        return self.m
-    
-    def move_hand(self, context, direction="up"):
-        if direction=="up":
-            return self.inverse("mod1", [0., 0., 0.,
-                                               0., 0., 0., 
-                                               0., 0., 0.5,
-                                               0., 0., 0.5,
-                                               0., 0., 1.,
-                                               0., 0., 1., 
-                                               0., 0., 1.,
-                                               0., 0., 1.,
-                                               0., 0., 1., 
-                                               0., 0., 1.], context)
-        elif direction=="forward":
-            return self.inverse("mod1", [0., 0., 0., 
-                                               0., 0., 0., 
-                                               0.5, 0., 0., 
-                                               0.5, 0., 0., 
-                                               1., 0., 0., 
-                                               1., 0., 0., 
-                                               1., 0., 0., 
-                                               1., 0., 0., 
-                                               1., 0., 0., 
-                                               1., 0., 0.,], context)
-        elif direction=="right":
-            return self.inverse("mod1", [0., 0., 0., 
-                                               0., 0., 0., 
-                                               0., -0.5, 0., 
-                                               0., -0.5, 0., 
-                                               0., -1., 0., 
-                                               0., -1., 0., 
-                                               0., -1., 0., 
-                                               0., -1., 0., 
-                                               0., -1., 0., 
-                                               0., -1., 0.,], context)
-        elif direction=="left":
-            return self.inverse("mod1", [0., 0., 0., 
-                                               0., 0., 0., 
-                                               0., 0.5, 0., 
-                                               0., 0.5, 0., 
-                                               0., 1., 0., 
-                                               0., 1., 0., 
-                                               0., 1., 0., 
-                                               0., 1., 0., 
-                                               0., 1., 0., 
-                                               0., 1., 0.,], context)
-        else:
-            raise NotImplementedError
-            
-        
-    def motor_move_joystick_1(self, context, direction="forward"):
-        if direction=="forward":
-            return self.inverse("mod2", [-1., 0., 
-                                               -1., 0., 
-                                               0., 0., 
-                                               1., 0., 
-                                               1., 0., 
-                                               1., 0., 
-                                               1., 0., 
-                                               0., 0., 
-                                               -1., 0., 
-                                               -1., 0.], context)
-        elif direction=="right":
-            return self.inverse("mod2", [-1., 0., 
-                                               -1., 0., 
-                                               -1., 0., 
-                                               -1., 1., 
-                                               -1., 1., 
-                                               -1., 1., 
-                                               -1., 1., 
-                                               -1., 0., 
-                                               -1., 0., 
-                                               -1., 0.], context)
-        elif direction=="left":
-            return self.inverse("mod2", [-1., 0., 
-                                               -1., 0., 
-                                               -1., 0., 
-                                               -1., -1., 
-                                               -1., -1., 
-                                               -1., -1., 
-                                               -1., -1., 
-                                               -1., 0., 
-                                               -1., 0., 
-                                               -1., 0.], context)  
-        else:
-            raise NotImplementedError
-              
-    def motor_move_joystick_2(self, context, direction="forward"):
-        if direction=="forward":
-            return self.inverse("mod3", [0., -1., 
-                                               0., -1., 
-                                               0., 0., 
-                                               0., 1., 
-                                               0., 1., 
-                                               0., 1., 
-                                               0., 1., 
-                                               0., 0., 
-                                               0., -1., 
-                                               0., -1.], context)
-        elif direction=="right":
-            return self.inverse("mod3", [0., -1.,
-                                               0., -1.,
-                                               0., -1., 
-                                               -1., -1.,
-                                               -1., -1.,
-                                               -1., -1.,
-                                               -1., -1.,
-                                               0., -1., 
-                                               0., -1., 
-                                               0., -1.], context)
-        elif direction=="left":
-            return self.inverse("mod3", [0., -1., 
-                                               0., -1., 
-                                               0., -1., 
-                                               1., -1.,
-                                               1., -1.,
-                                               1., -1.,
-                                               1., -1.,
-                                               0., -1., 
-                                               0., -1., 
-                                               0., -1.], context)
-        else:
-            raise NotImplementedError
-    
-    def motor_move_ergo(self, context, direction="right"):
-        angle = context[0]
-        print "angle courant ergo", angle
-        if direction=="right":
-            return self.inverse("mod4", [angle, -1.,
-                                               angle, -1.,
-                                               ((angle+1.) % 2.)- 1., 0.,
-                                               ((angle+1.-0.1) % 2.)- 1., 1.,
-                                               ((angle+1.-0.2) % 2.)- 1., 1.,
-                                               ((angle+1.-0.3) % 2.)- 1., 1.,
-                                               ((angle+1.-0.4) % 2.)- 1., 1.,
-                                               ((angle+1.-0.5) % 2.)- 1., 0.,
-                                               ((angle+1.-0.5) % 2.)- 1., -1.,
-                                               ((angle+1.-0.5) % 2.)- 1., -1.], context)
-        elif direction=="left":
-            return self.inverse("mod4", [angle, -1.,
-                                               angle, -1.,
-                                               ((angle+1.) % 2.)- 1., 0.,
-                                               ((angle+1.+0.1) % 2.)- 1., 1.,
-                                               ((angle+1.+0.2) % 2.)- 1., 1.,
-                                               ((angle+1.+0.3) % 2.)- 1., 1.,
-                                               ((angle+1.+0.4) % 2.)- 1., 1.,
-                                               ((angle+1.+0.5) % 2.)- 1., 0.,
-                                               ((angle+1.+0.5) % 2.)- 1., -1.,
-                                               ((angle+1.+0.5) % 2.)- 1., -1.], context)
-        else:
-            raise NotImplementedError
-        
-    def motor_move_ball(self, context, direction="right"):
-        angle = context[1]
-        if direction=="right":
-            return self.inverse("mod5", [angle, -1.,
-                                               angle, -1.,
-                                               ((angle+1.) % 2.)- 1., 0.,
-                                               ((angle+1.+0.1) % 2.)- 1., 1.,
-                                               ((angle+1.+0.2) % 2.)- 1., 1.,
-                                               ((angle+1.+0.3) % 2.)- 1., 1.,
-                                               ((angle+1.+0.4) % 2.)- 1., 1.,
-                                               ((angle+1.+0.5) % 2.)- 1., 0.,
-                                               ((angle+1.+0.5) % 2.)- 1., -1.,
-                                               ((angle+1.+0.5) % 2.)- 1., -1.], context)
-        elif direction=="left":
-            return self.inverse("mod5", [angle, -1.,
-                                               angle, -1.,
-                                               ((angle+1.) % 2.)- 1., 0.,
-                                               ((angle+1.+0.1) % 2.)- 1., 1.,
-                                               ((angle+1.+0.2) % 2.)- 1., 1.,
-                                               ((angle+1.+0.3) % 2.)- 1., 1.,
-                                               ((angle+1.+0.4) % 2.)- 1., 1.,
-                                               ((angle+1.+0.5) % 2.)- 1., 0.,
-                                               ((angle+1.+0.5) % 2.)- 1., -1.,
-                                               ((angle+1.+0.5) % 2.)- 1., -1.], context)
-        else:
-            raise NotImplementedError
-            
-    
-    def motor_make_light(self, context):
-        current_light = context[1]
-        return self.inverse("mod6", [((current_light+1.)%2.) - 1.,
-                                     ((current_light+1.)%2.) - 1.,
-                                     ((current_light+1.)%2.) - 1.,
-                                     ((current_light+1.+0.25)%2.) - 1.,
-                                     ((current_light+1.+0.5)%2.) - 1.,
-                                     ((current_light+1.+0.5)%2.) - 1.,
-                                     ((current_light+1.+0.5)%2.) - 1.,
-                                     ((current_light+1.+0.5)%2.) - 1.,
-                                     ((current_light+1.+0.5)%2.) - 1.,
-                                     ((current_light+1.+0.5)%2.) - 1.], context)
-    
-    def motor_make_sound(self, context):
-        current_sound = context[1]
-        return self.inverse("mod7", [((current_sound+1.)%2.) - 1.,
-                                     ((current_sound+1.)%2.) - 1.,
-                                     ((current_sound+1.)%2.) - 1.,
-                                     ((current_sound+1.+0.25)%2.) - 1.,
-                                     ((current_sound+1.+0.5)%2.) - 1.,
-                                     ((current_sound+1.+0.5)%2.) - 1.,
-                                     ((current_sound+1.+0.5)%2.) - 1.,
-                                     ((current_sound+1.+0.5)%2.) - 1.,
-                                     ((current_sound+1.+0.5)%2.) - 1.,
-                                     ((current_sound+1.+0.5)%2.) - 1.], context)
-        
 
     def get_normalized_interests_evolution(self):
-        data = np.transpose(np.array([self.interests_evolution[mid] for mid in ["mod1", "mod2", "mod3", "mod4", "mod5", "mod6", "mod7"]]))
+        data = np.transpose(np.array([self.interests_evolution[mid] for mid in ["mod1", "mod2"]]))
         data_sum = data.sum(axis=1)
         data_sum[data_sum==0.] = 1.
         return data / data_sum.reshape(data.shape[0],1)

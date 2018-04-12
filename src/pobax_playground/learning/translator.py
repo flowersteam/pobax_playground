@@ -27,10 +27,10 @@ class EnvironmentTranslator(object):
         self.goal_spaces = ['hand','culbuto_1']
         self.bounds_motors_min = np.array([float(bound[0]) for bound in self.bounds['motors']['positions']])
         self.bounds_motors_max = np.array([float(bound[1]) for bound in self.bounds['motors']['positions']])
-        self.bounds_sensory_min =  np.array([d for space in self.goal_spaces for d in [float(bound[0])for bound in self.bounds['sensory'][space]]*10])
-        #self.bounds_sensory_min = np.array([float(self.bounds['sensory']['ergo'][0][0]), float(self.bounds['sensory']['ball'][0][0])] + self.bounds_sensory_min)
-        self.bounds_sensory_max =  np.array([d for space in self.goal_spaces for d in [float(bound[1])for bound in self.bounds['sensory'][space]]*10])
-        #self.bounds_sensory_max = np.array([float(self.bounds['sensory']['ergo'][0][1]), float(self.bounds['sensory']['ball'][0][1])] + self.bounds_sensory_max)
+        self.bounds_sensory_min =  np.array([float(bounds[0]) for bounds in self.bounds['sensory']['culbuto_1']]
+                                           +[d for space in self.goal_spaces for d in [float(bound[0])for bound in self.bounds['sensory'][space]]*10])
+        self.bounds_sensory_max =  np.array([float(bounds[1]) for bounds in self.bounds['sensory']['culbuto_1']]
+                                           +[d for space in self.goal_spaces for d in [float(bound[1])for bound in self.bounds['sensory'][space]]*10])
         self.bounds_sensory_diff = self.bounds_sensory_max - self.bounds_sensory_min
 
         # DMP PARAMETERS
@@ -55,7 +55,8 @@ class EnvironmentTranslator(object):
         return  ((normalized_traj - np.array([-1.]*self.n_dmps))/2.) * (self.bounds_motors_max - self.bounds_motors_min) + self.bounds_motors_min
 
     def get_context(self, state):
-        return [state.culbuto_1.pose]
+        pos = state.culbuto_1.pose.position
+        return [pos.x,pos.y,pos.z]
 
     def sensory_trajectory_msg_to_list(self, state):
         def flatten(list2d):
@@ -65,16 +66,14 @@ class EnvironmentTranslator(object):
         state_dict['hand'] = flatten([(point.hand.pose.position.x, point.hand.pose.position.y, point.hand.pose.position.z) for point in state.points])
         state_dict['culbuto_1'] = flatten([(point.culbuto_1.pose.position.x, point.culbuto_1.pose.position.y, point.culbuto_1.pose.position.z) for point in state.points])
 
-        #self.context = {'ball': state_dict['ball'][0],
-        #                'ergo': state_dict['ergo'][0]}
-        #rospy.loginfo("Context {}".format(self.context))
+        self.context = {'culbuto_1': state_dict['culbuto_1'][:3]}
+        rospy.loginfo("Context {}".format(self.context))
 
         assert len(state_dict['hand']) == 30, len(state_dict['hand'])
         assert len(state_dict['culbuto_1']) == 30, len(state_dict['culbuto_1'])
 
         # Concatenate all these values in a huge self.sensory_state_size-float list
-        #s_bounded = np.array([self.context['ergo'], self.context['ball']] + [value for space in ['hand', 'culbuto_1'] for value in state_dict[space]])
-        s_bounded = np.array([value for space in ['hand', 'culbuto_1'] for value in state_dict[space]])
+        s_bounded = np.array(self.context['culbuto_1'] + [value for space in self.goal_spaces for value in state_dict[space]])
         s_normalized = ((s_bounded - self.bounds_sensory_min) / self.bounds_sensory_diff) * 2 + np.array([-1.]*self.sensory_state_size)
         s_normalized = bounds_min_max(s_normalized, self.sensory_state_size * [-1.], self.sensory_state_size * [1.])
         # print "context", s_bounded[:2], s_normalized[:2]
