@@ -29,29 +29,28 @@ class LearningNode(object):
                                  choice_eps=self.params["choice_eps"], 
                                  enable_hand=self.params["enable_hand"],
                                  normalize_interests=self.params["normalize_interests"])
-        self.experiment_name = rospy.get_param("/pobax_playground/experiment_name", "experiment")
-        # self.source_name = rospy.get_param("/pobax_playground/source_name", "experiment")
 
+        self.experiment_name = rospy.get_param("/pobax_playground/experiment_name", "experiment")
         rospy.loginfo("Learning node will write {}".format(self.experiment_name))
-        # rospy.loginfo("Learning node will read {}".format(self.source_name))
 
         # Saved experiment files
         self.dir = join(self.rospack.get_path('pobax_playground'), 'logs')
         if not os.path.isdir(self.dir):
             os.makedirs(self.dir)
-        # self.stamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        # self.source_file = join(self.dir, self.source_name + '.pickle')
-        self.experiment_file = join(self.dir, self.experiment_name + '.pickle') # if self.source_name == "none" else self.source_file
-        self.main_experiment = True
 
+        self.experiment_file = join(self.dir, self.experiment_name + '.pickle')
+
+        starting_iteration = 0
         if isfile(self.experiment_file):
-            self.learning.restart_from_end_of_file(self.experiment_file)
-        else:
+            starting_iteration = self.learning.restart_from_end_of_file(self.experiment_file)
+        else: 
             self.learning.start()
+        rospy.set_param("/pobax_playground/starting_iteration", starting_iteration)
 
         # Serving these services
         self.service_name_perceive = "/pobax_playground/learning/perceive"
         self.service_name_produce = "/pobax_playground/learning/produce"
+        self.service_name_save = "/pobax_playground/learning/save"
 
         # Publishing these topics
         self.pub_interests = rospy.Publisher('/pobax_playground/learning/interests', Interests, queue_size=1, latch=True)
@@ -68,6 +67,7 @@ class LearningNode(object):
     def run(self):
         rospy.Service(self.service_name_perceive, Perceive, self.cb_perceive)
         rospy.Service(self.service_name_produce, Produce, self.cb_produce)
+        rospy.Service(self.service_name_save, Save, self.cb_save)
         rospy.loginfo("Learning is up!")
 
         rate = rospy.Rate(self.params['publish_rate'])
@@ -92,15 +92,8 @@ class LearningNode(object):
         s = self.translator.sensory_trajectory_msg_to_list(request.demo.sensorial_demonstration)
         rospy.loginfo("Learning node is perceiving sensory trajectory for a demo")
         success = self.learning.perceive(s)
-
         if not success:
             rospy.logerr("Learner could not perceive this trajectory")
-
-        # Regularly overwrite the results
-        if rospy.get_param('/pobax_playground/save') and self.learning.get_iterations() % self.params['save_every'] == 0:
-            self.learning.save(self.experiment_file)
-            rospy.loginfo("Saving file (periodic save) into {}".format(self.experiment_file))
-
         return PerceiveResponse()
 
     def cb_produce(self, request):
@@ -117,6 +110,13 @@ class LearningNode(object):
 
         response = ProduceResponse(torso_trajectory=trajectory_msg)
         return response
+
+    def cb_save(self, request):
+        rospy.loginfo("Learning node saving current state...")
+        self.learning.save(self.experiment_file)
+        rospy.loginfo("Saved file (periodic save) into {}".format(self.experiment_file))
+        return SaveResponse()
+
 
 if __name__ == '__main__':
     rospy.init_node('learning')

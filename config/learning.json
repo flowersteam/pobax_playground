@@ -1,6 +1,5 @@
 {
-  "save_every": 10000,
-  "n_motor_babbling": 100,
+  "n_motor_babbling": 300,
   "explo_noise": 0.1,
   "choice_eps": 0.2,
   "publish_rate": 4,

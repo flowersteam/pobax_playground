@@ -72,6 +72,7 @@ add_service_files(
   GetSensorialState.srv
   BaxterResult.srv
   SetTorsoSafe.srv
+  Save.srv
 )
 
 ## Generate actions in the 'action' folder

@@ -111,7 +111,8 @@ class Learning_controller(object):
 
     def __init__(self):
         self.services = {'produce': {'name': '/pobax_playground/learning/produce', 'type': Produce},
-                         'perceive': {'name': '/pobax_playground/learning/perceive', 'type': Perceive}}
+                         'perceive': {'name': '/pobax_playground/learning/perceive', 'type': Perceive},
+                         'save': {'name': '/pobax_playground/learning/save', 'type': Save}}
 
         for service_name, service in self.services.items():
             rospy.loginfo("Controller is waiting service {}...".format(service['name']))
@@ -126,6 +127,10 @@ class Learning_controller(object):
         call = self.services['produce']['call']
         return call(ProduceRequest())
 
+    def save(self):
+        call = self.services['save']['call']
+        return call(SaveRequest())
+
 
 class Controller(object):
     def __init__(self):
@@ -137,6 +142,8 @@ class Controller(object):
         self.baxter = Baxter_controller(self.params["baxter_result_refresh_rate"])
         self.learning = Learning_controller()
         self.perception = Perception_controller()
+
+        self.starting_iteration = rospy.get_param("/pobax_playground/starting_iteration")
         rospy.loginfo('Controller fully started!')
 
     # Returns True if culbuto is outside torso's armreach, False otw
@@ -156,9 +163,10 @@ class Controller(object):
     def run(self):
         rospy.loginfo("controller node up and running")
         nb_iterations = rospy.get_param('/pobax_playground/iterations')
-        self.iteration = 0
+        self.iteration = self.starting_iteration
         try:
             while not rospy.is_shutdown() and self.iteration < nb_iterations:
+                self.iteration += 1
                 rospy.logwarn("#### Iteration {}/{}".format(self.iteration, nb_iterations))
                 trajectory = self.learning.produce().torso_trajectory
                 self.torso.execute_trajectory(trajectory)
@@ -175,7 +183,8 @@ class Controller(object):
                 else:
                     self.torso.reset(True)
                 self.learning.perceive(recording.demo)
-                self.iteration += 1
+                if self.iteration % self.params['save_every'] == 0:
+                    self.learning.save()
         finally:
             pass
             #self.torso.close()

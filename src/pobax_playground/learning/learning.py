@@ -59,7 +59,9 @@ class Learning(object):
     def restart_from_end_of_file(self, file_path):
         data = self.get_data_from_file(file_path)
         self.start()
+        nb_iter = len(data["chosen_modules"])
         self.agent.forward(data, len(data["chosen_modules"]))
+        return nb_iter
     
     def restart_from_file(self, file_path, iteration):
         data = self.get_data_from_file(file_path)

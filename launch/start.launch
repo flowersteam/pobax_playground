@@ -4,9 +4,9 @@
   <arg name="debug" default="True"/> <!-- Enable debugging information and pictures -->
   <arg name="save" default="False"/> <!-- Enable database dumping in folder logs/ -->
   <arg name="source" default="none"/> <!-- Source of pre-planned data for this experiment -->
-  <arg name="name" default="experiment"/> <!-- Name of the experiment -->
+  <arg name="name" default="default_experiment"/> <!-- Name of the experiment -->
   <arg name="display" default="action"/> <!-- display mode for baxter {action,debug,face} -->
-  <arg name="iterations" default="5000"/> <!-- Number of iterations to run -->
+  <arg name="iterations" default="10000"/> <!-- Number of iterations to run -->
   <arg name="ip_vrpn" default="baxterflowers.local"/> <!-- IP of the VRPN server (like Motive or Arena) -->
 
   <include file="$(find thr_interaction_controller)/launch/manual.launch" >
@@ -23,11 +23,10 @@
   <param name="/pobax_playground/iterations" value="$(arg iterations)" />
   <param name="/pobax_playground/save" value="$(arg save)" />
 
-
-  <node name="controller" pkg="pobax_playground" type="controller.py" output="$(arg output)" required="true"/>
   <node name="learning" pkg="pobax_playground" type="learning_node.py" output="$(arg output)" required="true"/>
   <node name="torso" pkg="pobax_playground" type="torso_node.py" output="$(arg output)" respawn="true"/>
   <node name="perception" pkg="pobax_playground" type="perception_node.py" output="$(arg output)"/>
   <node name="baxter" pkg="pobax_playground" type="baxter_node.py" output="$(arg output)" required="true"/>
+  <node name="controller" pkg="pobax_playground" type="controller.py" output="$(arg output)" required="true"/>
 
 </launch>
