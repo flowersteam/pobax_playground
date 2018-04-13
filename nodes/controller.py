@@ -9,6 +9,7 @@ from thr_interaction_controller.srv import *
 from pobax_playground.srv import *
 from std_msgs.msg import UInt8
 from trajectory_msgs.msg import JointTrajectory
+import numpy as np
 
 class Perception_controller(object):
     def __init__(self):
@@ -138,6 +139,18 @@ class Controller(object):
         self.perception = Perception_controller()
         rospy.loginfo('Controller fully started!')
 
+    # Returns True if culbuto is outside torso's armreach, False otw
+    def is_culbuto_too_far(self):
+        culbuto = self.perception.get().state.culbuto_1
+        if culbuto.pose.position.x < self.params['baxter_grasp_bound_x']:
+            return True
+        xs,zs = self.params['baxter_grasp_bound_line']
+        a,b = np.polyfit(xs,zs,1) #get line's equation
+        if culbuto.pose.position.z > (culbuto.pose.position.x * a + b):
+            return True
+        return False
+
+
 
 
     def run(self):
@@ -153,7 +166,7 @@ class Controller(object):
                 recording.demo.torso_demonstration = JointTrajectory()
                 #checks wether baxter must replace culbuto at Torso's arm reach
                 culbuto = self.perception.get().state.culbuto_1
-                if culbuto.pose.position.x < self.params['baxter_grasp_bound_x']:
+                if self.is_culbuto_too_far():
                     self.torso.set_safe_pose() #should be a blocking call
                     self.baxter.replace()
                     self.baxter.reset(blocking=False)

@@ -1,8 +1,6 @@
 {
   "nb_points": 30,
-  "baxter_safety_bound_x": 0.450,
-  "baxter_safety_bound_z": -0.224,
-  "baxter_grasp_bound_x": 0.380,
-  "baxter_grasp_bound_z": -0.180,
+  "baxter_grasp_bound_x": 0.330,
+  "baxter_grasp_bound_line": [[0.330,0.426],[-0.364,-0.219]],
   "baxter_result_refresh_rate": 20
 }
