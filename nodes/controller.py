@@ -146,14 +146,31 @@ class Controller(object):
         self.starting_iteration = rospy.get_param("/pobax_playground/starting_iteration")
         rospy.loginfo('Controller fully started!')
 
+    # Extracts culbuto's x,y,z coordinates from PoseStamped msg
+    def get_culb_coord(self, msg):
+        coords = msg.state.culbuto_1.pose.position
+        return coords.x, coords.y, coords.z
+
+    # Loops while culbuto is still moving
+    def wait_motionless_culbuto(self):
+        rospy.loginfo('Waiting for culbuto being immobile...')
+        old_x,old_y,old_z = self.get_culb_coord(self.perception.get())
+        while not rospy.is_shutdown():
+            rospy.sleep(0.1)
+            cur_x, cur_y, cur_z = self.get_culb_coord(self.perception.get())
+            if (abs(cur_x-old_x) + abs(cur_y-old_y) + abs(cur_y-old_y)) < 0.001:
+                rospy.loginfo('Finished waiting, culbuto is motionless!')
+                return
+            old_x,old_y,old_z = cur_x,cur_y,cur_z
+
     # Returns True if culbuto is outside torso's armreach, False otw
     def is_culbuto_too_far(self):
-        culbuto = self.perception.get().state.culbuto_1
-        if culbuto.pose.position.x < self.params['baxter_grasp_bound_x']:
+        culb_x,_,culb_z = self.get_culb_coord(self.perception.get())
+        if culb_x < self.params['baxter_grasp_bound_x']:
             return True
         xs,zs = self.params['baxter_grasp_bound_line']
         a,b = np.polyfit(xs,zs,1) #get line's equation
-        if culbuto.pose.position.z > (culbuto.pose.position.x * a + b):
+        if culb_z > (culb_x * a + b):
             return True
         return False
 
@@ -171,15 +188,13 @@ class Controller(object):
                 trajectory = self.learning.produce().torso_trajectory
                 self.torso.execute_trajectory(trajectory)
                 recording = self.perception.record(nb_points=self.params['nb_points']) #blocking
+                self.torso.reset(True)
+                self.wait_motionless_culbuto() #blocking
                 #checks wether baxter must replace culbuto at Torso's arm reach
-                culbuto = self.perception.get().state.culbuto_1
                 if self.is_culbuto_too_far():
                     self.torso.set_safe_pose() #should be a blocking call
                     self.baxter.replace()
                     self.baxter.reset(blocking=False)
-                    self.torso.reset(True)
-                    
-                else:
                     self.torso.reset(True)
                 self.learning.perceive(recording.demo)
                 if self.iteration % self.params['save_every'] == 0:

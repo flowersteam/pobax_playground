@@ -18,10 +18,8 @@ class Torso(object):
         self.rospack = RosPack()
         with open(join(self.rospack.get_path('pobax_playground'), 'config', 'torso_params.json')) as f:
             self.params = json.load(f)
-        with open(join(self.rospack.get_path('pobax_playground'), 'config', 'perception.json')) as f:
-            self.perception_params = json.load(f) # TODO remove perception
 
-        self.execute_rate_hz = self.perception_params['recording_rate']  # TODO
+        self.execute_rate_hz = self.params['speed']
         self.execute_rate = rospy.Rate(self.execute_rate_hz)
 
         self.publish_rate = rospy.Rate(self.params['publish_rate'])
