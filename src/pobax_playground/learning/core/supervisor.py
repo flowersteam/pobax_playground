@@ -107,7 +107,7 @@ class Supervisor(object):
                     
                 self.modules[mid].interest_model.forward(data["im_data"][mid], self.chosen_modules.count(mid), self.progresses_evolution[mid][-1], self.interests_evolution[mid][-1])
 
-    def choose_babbling_module(self, mode='prop'):
+    def choose_babbling_module(self, mode='random'):
         interests = {}
         for mid in self.modules.keys():
             if not ((not self.enable_hand) and mid=="mod1"):
