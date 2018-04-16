@@ -170,8 +170,7 @@ class Controller(object):
                 rospy.logwarn("#### Iteration {}/{}".format(self.iteration, nb_iterations))
                 trajectory = self.learning.produce().torso_trajectory
                 self.torso.execute_trajectory(trajectory)
-                recording = self.perception.record(nb_points=self.params['nb_points'])
-                recording.demo.torso_demonstration = JointTrajectory()
+                recording = self.perception.record(nb_points=self.params['nb_points']) #blocking
                 #checks wether baxter must replace culbuto at Torso's arm reach
                 culbuto = self.perception.get().state.culbuto_1
                 if self.is_culbuto_too_far():

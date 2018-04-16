@@ -1,7 +1,7 @@
 {
-  "nb_points": 30,
-  "baxter_grasp_bound_x": 0.330,
-  "baxter_grasp_bound_line": [[0.330,0.426],[-0.364,-0.219]],
+  "nb_points": 10,
+  "baxter_grasp_bound_x": 0.360,
+  "baxter_grasp_bound_line": [[0.360,0.456],[-0.364,-0.219]],
   "baxter_result_refresh_rate": 20,
   "save_every": 100
 }
