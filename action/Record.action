@@ -1,0 +1,4 @@
+std_msgs/UInt8 nb_points
+---
+pobax_playground/SensorialTrajectory sensorial_trajectory
+---

@@ -7,16 +7,18 @@ from rospkg import RosPack
 import os
 from thr_interaction_controller.srv import *
 from pobax_playground.srv import *
+from pobax_playground.msg import *
 from std_msgs.msg import UInt8
 from trajectory_msgs.msg import JointTrajectory
 import numpy as np
+import actionlib
 
 class Perception_controller(object):
     def __init__(self):
         self.services = {'record': {'name': '/pobax_playground/perception/record', 'type': Record},
                          'get': {'name': '/pobax_playground/perception/get', 'type': GetSensorialState}}
         for service_name, service in self.services.items():
-            rospy.loginfo("Controller is waiting service {}...".format(service['name']))
+            rospy.loginfo("Perception controller is waiting service {}...".format(service['name']))
             rospy.wait_for_service(service['name'])
             service['call'] = rospy.ServiceProxy(service['name'], service['type'])
 
@@ -24,6 +26,12 @@ class Perception_controller(object):
         with open(join(self.rospack.get_path('pobax_playground'), 'config', 'perception.json')) as f:
             self.params = json.load(f)
 
+        # Init Recording action server client for non blocking recording
+        self.record_server_name = '/pobax_playground/perception/record_server'
+        self.client = actionlib.SimpleActionClient(self.record_server_name, RecordAction)
+        self.client.wait_for_server()
+
+    # Blocking record
     def record(self, nb_points):
         call = self.services['record']['call']
         return call(RecordRequest(nb_points=UInt8(data=nb_points)))
@@ -32,13 +40,22 @@ class Perception_controller(object):
         call = self.services['get']['call']
         return call(GetSensorialStateRequest())
 
+    # Starts non-blocking recording
+    def start_recording(self,nb_points):
+        self.client.send_goal(RecordGoal(nb_points=UInt8(data=nb_points)))
+
+    def stop_recording(self):
+        self.client.cancel_goal()
+        self.client.wait_for_result()
+        return self.client.get_result().sensorial_trajectory
+
 class Torso_controller(object):
     def __init__(self):
         self.services = {'exec_torso': {'name': '/pobax_playground/torso/execute', 'type': ExecuteTorsoTrajectory},
                          'reset_torso': {'name': '/pobax_playground/torso/reset', 'type': Reset},
                          'safe_torso': {'name': '/pobax_playground/torso/set_safe', 'type': SetTorsoSafe}}
         for service_name, service in self.services.items():
-            rospy.loginfo("Controller is waiting service {}...".format(service['name']))
+            rospy.loginfo("Torso controller is waiting service {}...".format(service['name']))
             rospy.wait_for_service(service['name'])
             service['call'] = rospy.ServiceProxy(service['name'], service['type'])
 
@@ -58,7 +75,7 @@ class Baxter_controller(object):
         self.services = {'command': {'name': '/pobax_playground/baxter/command', 'type': BaxterCommand},
                          'get_result': {'name': '/pobax_playground/baxter/get_result', 'type': BaxterResult}}
         for service_name, service in self.services.items():
-            rospy.loginfo("Controller is waiting service {}...".format(service['name']))
+            rospy.loginfo("Baxter controller is waiting service {}...".format(service['name']))
             rospy.wait_for_service(service['name'])
             service['call'] = rospy.ServiceProxy(service['name'], service['type'])
 
@@ -115,7 +132,7 @@ class Learning_controller(object):
                          'save': {'name': '/pobax_playground/learning/save', 'type': Save}}
 
         for service_name, service in self.services.items():
-            rospy.loginfo("Controller is waiting service {}...".format(service['name']))
+            rospy.loginfo("Learning controller is waiting service {}...".format(service['name']))
             rospy.wait_for_service(service['name'])
             service['call'] = rospy.ServiceProxy(service['name'], service['type'])
 
@@ -193,7 +210,9 @@ class Controller(object):
                 #checks wether baxter must replace culbuto at Torso's arm reach
                 if self.is_culbuto_too_far():
                     self.torso.set_safe_pose() #should be a blocking call
+                    self.perception.start_recording(self.params['nb_points'])
                     self.baxter.replace()
+                    baxter_culb_recording = self.perception.stop_recording()
                     self.baxter.reset(blocking=False)
                     self.torso.reset(True)
                 self.learning.perceive(recording.demo)

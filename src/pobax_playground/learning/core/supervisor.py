@@ -116,7 +116,7 @@ class Supervisor(object):
                 interests[mid] = 0.
         
         if mode == 'random':
-            mid = np.random.choice(self.interests.keys())
+            mid = np.random.choice(interests.keys())
         elif mode == 'greedy':
             eps = 0.2
             if np.random.random() < eps:

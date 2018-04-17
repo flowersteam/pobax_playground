@@ -20,12 +20,17 @@ class Perception(object):
         # Serving these services
         self.service_name_get = "/pobax_playground/perception/get"
         self.service_name_record = "/pobax_playground/perception/record"
+        #self.service_name_baxter_start_record = "/pobax_playground/perception/baxter_start_record"
+        #self.service_name_baxter_stop_record = "/pobax_playground/perception/baxter_stop_record"
         # Using these services
         self.topics = TopicAggregator()  # All topics are read and stored in that object
 
     def run(self):
         rospy.Service(self.service_name_get, GetSensorialState, self.cb_get)
         rospy.Service(self.service_name_record, Record, self.cb_record)
+        #rospy.Service(self.service_name_baxter_start_record, BaxterStartRecord, self.cb_baxter_start_record)
+        #rospy.Service(self.service_name_baxter_stop_record, BaxterStopRecord, self.cb_baxter_stop_record)
+
         rospy.loginfo("Done, perception is up!")
 
     def get(self):
@@ -52,3 +57,10 @@ class Perception(object):
         response.demo.type_demo = Demonstration.TYPE_DEMO_NORMAL
         rospy.loginfo("Recorded!")
         return response
+    '''
+    def cb_baxter_start_record(self, request):
+        return BaxterStartResponse
+
+    def cb_baxter_stop_record(self, request):
+        return BaxterStopResponse
+    '''
