@@ -24,11 +24,12 @@ class LearningNode(object):
         self.translator = EnvironmentTranslator()
         self.learning = Learning(self.translator.config,
                                  sensory_state_size=self.params["sensory_state_size"],
+                                 model_babbling=self.params["model_babbling"],
                                  n_motor_babbling=self.params["n_motor_babbling"], 
                                  explo_noise=self.params["explo_noise"], 
                                  choice_eps=self.params["choice_eps"], 
-                                 enable_hand=self.params["enable_hand"],
-                                 normalize_interests=self.params["normalize_interests"])
+                                 proba_imitate=self.params["proba_imitate"],
+                                 tau=self.params["tau"])
 
         self.experiment_name = rospy.get_param("/pobax_playground/experiment_name", "experiment")
         rospy.loginfo("Learning node will write {}".format(self.experiment_name))
@@ -53,7 +54,7 @@ class LearningNode(object):
         self.service_name_save = "/pobax_playground/learning/save"
 
         # Publishing these topics
-        self.pub_interests = rospy.Publisher('/pobax_playground/learning/interests', Interests, queue_size=1, latch=True)
+        #self.pub_interests = rospy.Publisher('/pobax_playground/learning/interests', Interests, queue_size=1, latch=True)
         self.pub_focus = rospy.Publisher('/pobax_playground/learning/current_focus', String, queue_size=1, latch=True)
 
         
@@ -72,9 +73,9 @@ class LearningNode(object):
 
         rate = rospy.Rate(self.params['publish_rate'])
         while not rospy.is_shutdown():
-            self.publish()
+            #self.publish()
             rate.sleep()
-
+    '''
     def publish(self):
         interests_array = self.learning.get_normalized_interests_evolution()
         interests = Interests()
@@ -83,7 +84,7 @@ class LearningNode(object):
         interests.interests = [Float32(val) for val in interests_array.flatten()]
 
         self.pub_interests.publish(interests)
-
+    '''
 
     ################################# Service callbacks
     def cb_perceive(self, request):

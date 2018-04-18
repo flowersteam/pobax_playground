@@ -3,7 +3,8 @@
   "explo_noise": 0.1,
   "choice_eps": 0.2,
   "publish_rate": 4,
-  "enable_hand": true,
-  "normalize_interests": true,
+  "model_babbling": "random",
+  "tau": 1.0,
+  "proba_imitate": 0.5,
   "sensory_state_size": 63
 }

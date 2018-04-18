@@ -12,13 +12,13 @@ from interest_model import MiscRandomInterest, ContextRandomInterest
 
 
 class LearningModule(Agent):
-    def __init__(self, mid, m_space, s_space, env_conf, explo_noise=0., normalize_interests=True, context_mode=None):
+    def __init__(self, mid, m_space, s_space, env_conf, explo_noise=0.1, imitate=None, context_mode=None):
 
-
+        #print mid, m_space, s_space
         self.conf = make_configuration(env_conf.m_mins[m_space], 
                                        env_conf.m_maxs[m_space], 
-                                       array(list(env_conf.m_mins[m_space]) + list(env_conf.s_mins))[s_space],
-                                       array(list(env_conf.m_maxs[m_space]) + list(env_conf.s_maxs))[s_space])
+                                       array(list(env_conf.m_mins) + list(env_conf.s_mins))[s_space],
+                                       array(list(env_conf.m_maxs) + list(env_conf.s_maxs))[s_space])
         
         self.im_dims = self.conf.s_dims
         
@@ -27,9 +27,16 @@ class LearningModule(Agent):
         self.context_mode = context_mode
         self.s_space = s_space
         self.motor_babbling_n_iter = 0
+        self.imitate = imitate
         
         self.s = None
+        self.sp = None
         self.last_interest = 0
+        self.goal_dict = {}
+        self.imitated_sounds = []
+        
+        # Only used for stats:
+        self.toynames = []
         
         if context_mode is not None:
             im_cls, kwargs = (ContextRandomInterest, {
@@ -53,7 +60,6 @@ class LearningModule(Agent):
         
         Agent.__init__(self, self.conf, self.sm, self.im, context_mode=self.context_mode)
         
-
         
     def motor_babbling(self, n=1): 
         if n == 1:
@@ -68,6 +74,7 @@ class LearningModule(Agent):
             
     def get_m(self, ms): return array(ms[self.m_space])
     def get_s(self, ms): return array(ms[self.s_space])
+    def get_c(self, context): return array(context)[self.context_mode["context_dims"]]
         
     def set_one_m(self, ms, m):
         """ Set motor dimensions used by module
@@ -94,62 +101,93 @@ class LearningModule(Agent):
         return ms          
     
     def inverse(self, s, explore=False):
-        m,_ = self.infer(self.conf.s_dims, self.conf.m_dims, s, pref='', explore=explore)
-        return self.motor_primitive(m)
+        self.m,_ = self.infer(self.conf.s_dims, self.conf.m_dims, s, pref='', explore=explore)
+        return self.m
         
-    def infer(self, expl_dims, inf_dims, x, pref='', n=1, explore=True):      
-        try:
-            if self.n_bootstrap > 0:
-                self.n_bootstrap -= 1
-                raise ExplautoBootstrapError
-            mode = "explore" if explore else "exploit"
-            if n == 1:
-                self.sensorimotor_model.mode = mode
-                m = self.sensorimotor_model.infer(expl_dims, inf_dims, x.flatten())
-            else:
-                self.sensorimotor_model.mode = mode
-                m = []
-                for _ in range(n):
-                    m.append(self.sensorimotor_model.infer(expl_dims, inf_dims, x.flatten()))
-            self.emit(pref + 'inference' + '_' + self.mid, m)
-        except ExplautoBootstrapError:
-            if n == 1:
-                m = rand_bounds(self.conf.bounds[:, inf_dims]).flatten(), -1
-            else:
-                m = rand_bounds(self.conf.bounds[:, inf_dims], n), -1
-        return m
+    def infer(self, expl_dims, inf_dims, x, pref='', explore=True):      
+        mode = "explore" if explore else "exploit"
+        self.sensorimotor_model.mode = mode
+        m, sp = self.sensorimotor_model.infer(expl_dims, inf_dims, x.flatten())
+        return m, sp
+    
+    def update_imitation_goals(self, imitate_sms, window_size=1000):
+        self.goal_dict = {}
+        for imitate_sm in imitate_sms:
+            n = len(imitate_sm)
+            goals = [imitate_sm.get_y(idx)[-10:] for idx in range(max(0, n - window_size), n)]
+            #print "imitate", goals
+            for goal in goals:
+                if not self.goal_dict.has_key(goal.tostring()):
+                    self.goal_dict[goal.tostring()] = (goal, 1)
+                else:
+                    self.goal_dict[goal.tostring()] = (goal, self.goal_dict[goal.tostring()][1] + 1)
+        
+    def imitate_goal(self, imitate_sm, mode="proportional"):
+        #print "*******Imitating"
+        self.update_imitation_goals(imitate_sm)
+        if len(self.goal_dict) > 0:
+            if mode == "uniform":
+                goals = self.goal_dict.values()
+                goal = np.array(goals[np.random.choice(range(len(self.goal_dict)))][0])
+                return goal
+            elif mode == "proportional":
+                goals = self.goal_dict.values()
+                psum = sum([float(g[1]) for g in goals])
+                goal = np.array(goals[np.random.choice(range(len(self.goal_dict)), p=[g[1]/psum for g in goals])][0])
+                #print "goals proba", [g[1]/psum for g in goals]
+                av = np.mean([float(g[1]) for g in goals])
+                print "toys occurences", 
+                for i in [0, 1, 2]:
+                    if self.goal_dict.has_key(self.toynames[i]):
+                        print float(self.goal_dict[self.toynames[i]][1]) / av,
+                print
+
+                return goal
+        else:
+            return np.zeros(len(self.expl_dims))
             
-    def produce(self, context=None):
+    def produce(self, context=None, imitate_sm=None):
         if self.t < self.motor_babbling_n_iter:
             self.m = self.motor_babbling()
             self.s = np.zeros(len(self.s_space))
             self.x = np.zeros(len(self.expl_dims))
+            #print self.mid, "babble", self.x, self.expl_dims, self.inf_dims
         else:
-            self.x = self.choose(context)
-            m, idx = self.infer(self.expl_dims, self.inf_dims, self.x)
-            self.y = m
-                
-            #self.m, self.s = self.extract_ms(self.x, self.y)
-            self.m, sg = self.y, self.x#self.extract_ms(self.x, self.y)
-            #self.m = self.motor_primitive(self.m)
+            if imitate_sm is not None:
+                self.x = np.array(self.imitate_goal(imitate_sm))
+                self.imitated_sounds.append(self.x)
+                #print self.mid, "imitate", self.x, self.expl_dims, self.inf_dims
+                #print self.x
+            else:
+                self.x = self.choose(context)
+                #print self.mid, "produce goal", self.x, self.expl_dims, self.inf_dims
+                self.imitated_sounds.append(None)
+            #print self.mid, "goal", self.x, self.expl_dims, self.inf_dims
+            self.y, self.sp = self.infer(self.expl_dims, self.inf_dims, self.x, explore= np.random.random() < 0.5)
             
-            self.s = sg
-            #self.emit('movement' + '_' + self.mid, self.m)          
+            self.m, self.s = self.extract_ms(self.x, self.y)
+                   
         return self.m        
     
+    def s_moved(self, s):
+        ncdims = self.context_mode['context_n_dims'] if self.context_mode else 0
+        s_x = np.array(s[ncdims:ncdims + 5])
+        s_y = np.array(s[ncdims + 5:])      
+        return np.linalg.norm(s_x - s_x.mean()) + np.linalg.norm(s_y - s_y.mean()) > 0.001        
+    
     def update_sm(self, m, s): 
-        self.sensorimotor_model.update(m, s)   
-        self.t += 1 
+        if self.s_moved(s):
+            self.sensorimotor_model.update(m, s)   
+            self.t += 1 
     
     def update_im(self, m, s):
         if self.t >= self.motor_babbling_n_iter:
-            return self.interest_model.update(hstack((m, self.s)), hstack((m, s)))
+            self.interest_model.update(hstack((m, self.s)), hstack((m, s)), self.sp)
         
     def competence(self): return self.interest_model.competence()
     def progress(self): return self.interest_model.progress()
     def interest(self): return self.interest_model.interest()
-    
 
     def perceive(self, m, s):
         self.update_sm(m, s)
-        self.last_interest = self.update_im(m, s)
+        self.update_im(m, s)
