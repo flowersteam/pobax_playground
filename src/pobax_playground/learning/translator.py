@@ -1,4 +1,4 @@
-from .dmp.mydmp import MyDMP
+from pobax_playground.tools.dmp.mydmp import MyDMP
 from explauto.utils import bounds_min_max
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from rospkg import RosPack

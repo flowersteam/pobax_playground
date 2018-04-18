@@ -8,7 +8,7 @@ from oct2py import Oct2Py, Oct2PyError
 from explauto.environment.environment import Environment
 from explauto.utils import bounds_min_max
 from explauto.models.dmp import DmpPrimitive
-from pobax_playground.voice.dmp.mydmp import MyDMP
+from pobax_playground.tools.dmp.mydmp import MyDMP
 
 if not (os.environ.has_key('AVAKAS') and os.environ['AVAKAS']):
     import pyaudio

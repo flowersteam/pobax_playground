@@ -3,7 +3,7 @@ import numpy as np
 from explauto.utils import bounds_min_max
 from explauto.environment.environment import Environment
 from explauto.environment.simple_arm.simple_arm import joint_positions
-from dmp.mydmp import MyDMP
+from pobax_playground.tools.dmp.mydmp import MyDMP
 
 
 class ArmEnvironment(Environment):
