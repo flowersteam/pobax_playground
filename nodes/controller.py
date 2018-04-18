@@ -151,10 +151,15 @@ class Learning_controller(object):
 class Voice_controller(object):
 
     def __init__(self):
-        pass
+       self.services = {'produce': {'name': '/pobax_playground/voice/execute', 'type': ExecuteVocalTrajectory}} 
 
-    def produce(self, trajectory):
-        pass
+       for service_name, service in self.services.items():
+            rospy.loginfo("Voice controller is waiting service {}...".format(service['name']))
+            rospy.wait_for_service(service['name'])
+            service['call'] = rospy.ServiceProxy(service['name'], service['type'])
+
+    def execute(self, trajectory):
+        return self.services['produce']['call'](ExecuteVocalTrajectoryRequest()).sound_trajectory
 
 class Controller(object):
     def __init__(self):
@@ -208,6 +213,7 @@ class Controller(object):
         self.iteration = self.starting_iteration
         try:
             while not rospy.is_shutdown() and self.iteration < nb_iterations:
+                print self.voice.execute('dummy')
                 self.iteration += 1
                 rospy.logwarn("#### Iteration {}/{}".format(self.iteration, nb_iterations))
                 trajectory = self.learning.produce().torso_trajectory
