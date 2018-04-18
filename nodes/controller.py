@@ -148,6 +148,13 @@ class Learning_controller(object):
         call = self.services['save']['call']
         return call(SaveRequest())
 
+class Voice_controller(object):
+
+    def __init__(self):
+        pass
+
+    def produce(self, trajectory):
+        pass
 
 class Controller(object):
     def __init__(self):
@@ -159,6 +166,7 @@ class Controller(object):
         self.baxter = Baxter_controller(self.params["baxter_result_refresh_rate"])
         self.learning = Learning_controller()
         self.perception = Perception_controller()
+        self.voice = Voice_controller()
 
         self.starting_iteration = rospy.get_param("/pobax_playground/starting_iteration")
         rospy.loginfo('Controller fully started!')
