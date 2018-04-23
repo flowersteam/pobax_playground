@@ -1,2 +1,3 @@
 from learning import Learning
-from translator import EnvironmentTranslator
+from translator_arm import EnvironmentTranslatorArm
+from translator_diva import EnvironmentTranslatorDiva

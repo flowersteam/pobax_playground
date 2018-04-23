@@ -5,7 +5,7 @@ from os.path import join
 from os import system
 from rospkg.rospack import RosPack
 from pobax_playground.srv import *
-from pobax_playground.msg import SensorialState, Demonstration
+from pobax_playground.msg import SensorialState
 from .aggregator import TopicAggregator
 from ..tools import joints
 
@@ -51,10 +51,9 @@ class Perception(object):
         for point in range(request.nb_points.data):
             if rospy.is_shutdown():
                 break
-            response.demo.sensorial_demonstration.points.append(self.get())
+            response.sensorial_trajectory.points.append(self.get())
             self.rate.sleep()
 
-        response.demo.type_demo = Demonstration.TYPE_DEMO_NORMAL
         rospy.loginfo("Recorded!")
         return response
     '''

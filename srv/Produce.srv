@@ -1,2 +1,6 @@
 ---
+# trajectory type is either "arm" or "diva"
+string trajectory_type
 trajectory_msgs/JointTrajectory torso_trajectory
+pobax_playground/VocalTrajectory vocal_trajectory
+

@@ -1,2 +1,5 @@
-pobax_playground/Demonstration demo
+geometry_msgs/Point s_context
+pobax_playground/SensorialTrajectory s_response_physical
+pobax_playground/SoundTrajectory s_response_torso_sound
+pobax_playground/SoundTrajectory s_response_baxter_sound
 ---

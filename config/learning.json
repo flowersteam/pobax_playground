@@ -6,5 +6,5 @@
   "model_babbling": "random",
   "tau": 1.0,
   "proba_imitate": 0.5,
-  "sensory_state_size": 63
+  "sensory_state_size": 83
 }

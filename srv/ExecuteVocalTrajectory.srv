@@ -1,3 +1,0 @@
-trajectory_msgs/JointTrajectory vocal_trajectory
----
-string sound_trajectory

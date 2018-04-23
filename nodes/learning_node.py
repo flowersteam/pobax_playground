@@ -7,12 +7,13 @@ import datetime
 from os.path import join
 from rospkg.rospack import RosPack
 from pobax_playground.srv import *
-from pobax_playground.msg import Interests, Demonstration
-from pobax_playground.learning import EnvironmentTranslator, Learning
+from pobax_playground.msg import Interests
+from pobax_playground.learning import EnvironmentTranslatorDiva, EnvironmentTranslatorArm, Learning
 from std_msgs.msg import String, Bool, UInt32, Float32
 from threading import RLock
 from copy import copy
 from os.path import isfile
+import numpy as np
 
 
 class LearningNode(object):
@@ -20,9 +21,16 @@ class LearningNode(object):
         self.rospack = RosPack()
         with open(join(self.rospack.get_path('pobax_playground'), 'config', 'learning.json')) as f:
             self.params = json.load(f)
+        #with open(join(self.rospack.get_path('pobax_playground'), 'config', 'dmps.json')) as f:
+        #    self.dmps_params = json.load(f)
 
-        self.translator = EnvironmentTranslator()
-        self.learning = Learning(self.translator.config,
+        self.arm_translator = EnvironmentTranslatorArm()
+        self.diva_translator = EnvironmentTranslatorDiva()
+        self.config = dict(m_mins=[-1.]*68,
+                           m_maxs=[1.]*68,
+                           s_mins=[-1.]*self.params["sensory_state_size"],
+                           s_maxs=[1.]*self.params["sensory_state_size"])
+        self.learning = Learning(self.config,
                                  sensory_state_size=self.params["sensory_state_size"],
                                  model_babbling=self.params["model_babbling"],
                                  n_motor_babbling=self.params["n_motor_babbling"], 
@@ -90,9 +98,10 @@ class LearningNode(object):
     def cb_perceive(self, request):
         #rospy.logwarn("Aborting perception, TODO modify learning core for new sensory space")
         #return PerceiveResponse()
-        s = self.translator.sensory_trajectory_msg_to_list(request.demo.sensorial_demonstration)
-        rospy.loginfo("Learning node is perceiving sensory trajectory for a demo")
-        success = self.learning.perceive(s)
+        s_physical = self.arm_translator.sensory_trajectory_msg_to_list(request)
+        s_sound = self.diva_translator.sensory_trajectory_msg_to_list(request)
+        rospy.loginfo("Learning node is perceiving sensory trajectory")
+        success = self.learning.perceive(np.append(s_physical, s_sound))
         if not success:
             rospy.logerr("Learner could not perceive this trajectory")
         return PerceiveResponse()
@@ -102,15 +111,22 @@ class LearningNode(object):
         state = self.get_state(GetSensorialStateRequest()).state
 
         rospy.loginfo("Learning node is producing...")
-        w = self.learning.produce(self.translator.get_context(state))
+        w, param_type = self.learning.produce(self.arm_translator.get_context(state))
 
-        trajectory_matrix = self.translator.w_to_trajectory(w)
-        trajectory_msg = self.translator.matrix_to_trajectory_msg(trajectory_matrix)
+        produce_msg = ProduceResponse(trajectory_type=param_type)
+        if param_type == "arm":
+            trajectory_matrix = self.arm_translator.w_to_trajectory(w)
+            trajectory_msg = self.arm_translator.matrix_to_trajectory_msg(trajectory_matrix)
+            produce_msg.torso_trajectory = trajectory_msg
+        elif param_type == "diva":
+            trajectory_matrix = self.diva_translator.w_to_trajectory(w)
+            trajectory_msg = self.diva_translator.matrix_to_trajectory_msg(trajectory_matrix)
+            produce_msg.vocal_trajectory = trajectory_msg
+        else:
+            rospy.logerr("Learning Node received an unknown param_type when calling produce()")
 
         self.ready_for_interaction = True
-
-        response = ProduceResponse(torso_trajectory=trajectory_msg)
-        return response
+        return produce_msg
 
     def cb_save(self, request):
         rospy.loginfo("Learning node saving current state...")

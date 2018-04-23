@@ -28,57 +28,32 @@ class Supervisor(object):
         
         # Define motor and sensory spaces:
         m_ndims = self.conf.m_ndims # number of motor parameters
+        self.arm_n_dims = 40
+        self.diva_n_dims = 28
+        assert(m_ndims == self.arm_n_dims + self.diva_n_dims)
 
-        
-        self.arm_n_dims = m_ndims
-        self.diva_n_dims = 0
         self.m_arm = range(self.arm_n_dims)
+        self.m_diva = range(self.arm_n_dims,self.arm_n_dims + self.diva_n_dims)
 
         self.m_space = range(m_ndims)
         self.c_dims = range(m_ndims, m_ndims+3)
         self.s_hand = range(m_ndims+3, m_ndims+33)
         self.s_culbuto_1 = range(m_ndims+33, m_ndims+63)
+        self.s_self_sound = range(m_ndims+63, m_ndims+73)
+        self.s_caregiver_sound = range(m_ndims+73, m_ndims+83)
       
         self.s_spaces = dict(s_hand=self.s_hand, 
-                             s_culbuto_1=self.s_culbuto_1)
-
-        '''
-        self.arm_n_dims = 21
-        self.diva_n_dims = 28
-        
-        self.m_arm = range(self.arm_n_dims)
-        self.m_diva = range(self.arm_n_dims,self.arm_n_dims + self.diva_n_dims)
-        self.m_space = range(m_ndims)
-        self.c_dims = range(m_ndims, m_ndims+10)
-        self.s_hand = range(m_ndims+10, m_ndims+20)
-        self.s_toy1 = range(m_ndims+30, m_ndims+40)
-        self.s_toy2 = range(m_ndims+40, m_ndims+50)
-        self.s_toy3 = range(m_ndims+50, m_ndims+60)
-        self.s_self_sound = range(m_ndims+60, m_ndims+70)
-        self.s_caregiver_sound = range(m_ndims+70, m_ndims+80)
-        #self.s_caregiver = range(m_ndims+70, m_ndims+80)
-        
-        self.s_spaces = dict(s_hand=self.s_hand, 
-                             s_tool=self.s_tool, 
-                             s_toy1=self.s_toy1, 
-                             s_toy2=self.s_toy2, 
-                             s_toy3=self.s_toy3, 
+                             s_culbuto_1=self.s_culbuto_1,
                              s_self_sound=self.s_self_sound, 
                              s_caregiver_sound=self.s_caregiver_sound)
-        '''
+        
         # Create the learning modules:
         self.modules['mod1'] = LearningModule("mod1", self.m_arm, self.s_hand, self.conf, explo_noise=self.explo_noise)
-        #self.modules['mod2'] = LearningModule("mod2", self.m_arm, self.s_tool, self.conf, explo_noise=self.explo_noise)
         self.modules['mod3'] = LearningModule("mod3", self.m_arm, self.c_dims + self.s_culbuto_1, self.conf, context_mode=dict(mode='mcs', context_dims=[0, 1, 2], context_n_dims=3, context_sensory_bounds=[[-2.]*3,[2.]*3]), explo_noise=self.explo_noise)
-        #self.modules['mod4'] = LearningModule("mod4", self.m_arm, self.c_dims[4:6] + self.s_toy2, self.conf, context_mode=dict(mode='mcs', context_dims=[4, 5], context_n_dims=2, context_sensory_bounds=[[-1.]*2,[1.]*2]), explo_noise=self.explo_noise)
-        #self.modules['mod5'] = LearningModule("mod5", self.m_arm, self.c_dims[6:8] + self.s_toy3, self.conf, context_mode=dict(mode='mcs', context_dims=[6, 7], context_n_dims=2, context_sensory_bounds=[[-1.]*2,[1.]*2]), explo_noise=self.explo_noise)
         #self.modules['mod6'] = LearningModule("mod6", self.m_arm, self.c_dims[2:8] + self.s_caregiver_sound, self.conf, context_mode=dict(mode='mcs', context_dims=[2, 3, 4, 5, 6, 7], context_n_dims=6, context_sensory_bounds=[[-1.]*6,[1.]*6]), explo_noise=self.explo_noise)
-        
-        #self.modules['mod10'] = LearningModule("mod10", self.m_diva, self.c_dims[2:4] + self.s_toy1, self.conf, context_mode=dict(mode='mcs', context_dims=[2, 3], context_n_dims=2, context_sensory_bounds=[[-1.]*2,[1.]*2]), explo_noise=self.explo_noise)
-        #self.modules['mod11'] = LearningModule("mod11", self.m_diva, self.c_dims[4:6] + self.s_toy2, self.conf, context_mode=dict(mode='mcs', context_dims=[4, 5], context_n_dims=2, context_sensory_bounds=[[-1.]*2,[1.]*2]), explo_noise=self.explo_noise)
-        #self.modules['mod12'] = LearningModule("mod12", self.m_diva, self.c_dims[6:8] + self.s_toy3, self.conf, context_mode=dict(mode='mcs', context_dims=[6, 7], context_n_dims=2, context_sensory_bounds=[[-1.]*2,[1.]*2]), explo_noise=self.explo_noise)
-        #self.modules['mod13'] = LearningModule("mod13", self.m_diva, self.s_self_sound, self.conf, explo_noise=self.explo_noise)
-        #self.modules['mod14'] = LearningModule("mod14", self.m_diva, self.s_caregiver_sound, self.conf, imitate=["mod6", "mod14"], explo_noise=self.explo_noise)
+        self.modules['mod12'] = LearningModule("mod12", self.m_diva, self.c_dims + self.s_culbuto_1, self.conf, context_mode=dict(mode='mcs', context_dims=[0, 1, 2], context_n_dims=3, context_sensory_bounds=[[-2.]*3,[2.]*3]), explo_noise=self.explo_noise)
+        self.modules['mod13'] = LearningModule("mod13", self.m_diva, self.s_self_sound, self.conf, explo_noise=self.explo_noise)
+        self.modules['mod14'] = LearningModule("mod14", self.m_diva, self.s_caregiver_sound, self.conf, explo_noise=self.explo_noise)
          
 
         for mid in self.modules.keys():
@@ -135,11 +110,9 @@ class Supervisor(object):
 
         
     def choose_babbling_module(self):
-
         interests = {}
         for mid in self.modules.keys():
             interests[mid] = self.modules[mid].interest()
-        
         if self.model_babbling == 'random':
             mid = np.random.choice(interests.keys())
         elif self.model_babbling == 'hand_object_sound':
@@ -189,10 +162,6 @@ class Supervisor(object):
     
     def motor_babbling(self, arm=False, audio=False):
         self.m = rand_bounds(self.conf.m_bounds)[0]
-        if not self.modules.has_key("mod13"):
-            arm = True
-        if not self.modules.has_key("mod1"):
-            audio = True
         if arm:
             r = 1.
             self.last_cmd = "arm"
@@ -207,7 +176,7 @@ class Supervisor(object):
         else:
             self.m[self.arm_n_dims:] = 0.
             self.last_cmd = "arm"
-        return self.m
+        return self.m, self.last_cmd
     
     def set_ms(self, m, s): return np.array(list(m) + list(s))
             
@@ -243,7 +212,7 @@ class Supervisor(object):
                 self.last_cmd = "diva"
                 self.m = [0.]*self.arm_n_dims + list(m)
                 self.count_diva += 1
-            return self.m
+            return self.m, self.last_cmd
     
     def perceive(self, s):
         s = self.sensory_primitive(s)

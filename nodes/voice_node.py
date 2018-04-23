@@ -4,8 +4,9 @@ from rospkg.rospack import RosPack
 import os
 import json
 from os.path import join
-from pobax_playground.srv import ExecuteVocalTrajectory, ExecuteVocalTrajectoryResponse
-from pobax_playground.voice.arm_diva_env import PlayEnvironment
+from pobax_playground.srv import ExecuteAnalyseVocalTrajectory, ExecuteAnalyseVocalTrajectoryResponse
+from pobax_playground.msg import SoundTrajectory
+from pobax_playground.voice.voice import Voice
 
 
 class VoiceNode(object):
@@ -16,23 +17,24 @@ class VoiceNode(object):
             self.params = json.load(f)
 
         # Serving these services
-        self.service_name_execute = "/pobax_playground/voice/execute"
-
+        self.service_name_execute_analyse = "/pobax_playground/voice/execute_analyse"
+        
         # Init DIVA vocal tract simulator
-        self.env = PlayEnvironment(self.params["tau"],
-                                   self.params["pa"],
-                                   self.params["pc"],
-                                   gui=self.params["gui"],
-                                   audio=self.params["audio"])
+        self.voice = Voice(self.params["tau"],
+                         self.params["pa"],
+                         self.params["pc"],
+                         gui=self.params["gui"],
+                         audio=self.params["audio"])
 
     def run(self):
-        rospy.Service(self.service_name_execute, ExecuteVocalTrajectory, self.cb_execute)
+        rospy.Service(self.service_name_execute_analyse, ExecuteAnalyseVocalTrajectory, self.cb_execute_analyse)
 
-    def cb_execute(self,request):
+    def cb_execute_analyse(self,request):
         rospy.loginfo('Voice node producing sound...')
-        m = self.env.motor_babbling(audio=True)
-        s = self.env.update(m)
-        return ExecuteVocalTrajectoryResponse(sound_trajectory='hello, this is me again')
+        torso_sound_traj, baxter_sound_traj, is_culb_name = self.voice.execute_analyse(request.vocal_trajectory.data)
+        return ExecuteAnalyseVocalTrajectoryResponse(torso_sound_trajectory=SoundTrajectory(data=torso_sound_traj),
+                                                     baxter_sound_trajectory=SoundTrajectory(data=baxter_sound_traj),
+                                                     is_culbuto_name=is_culb_name)
 
 rospy.init_node('voice')
 VoiceNode().run()

@@ -62,7 +62,7 @@ class DivaSynth:
 
 
 
-class DivaEnvironment(Environment):
+class Diva(object):
     def __init__(self, m_mins, m_maxs, s_mins, s_maxs,
                 m_used,
                 s_used,
@@ -94,9 +94,6 @@ class DivaEnvironment(Environment):
         self.pressure = 1.
         self.voicing = 1.
         
-        if (os.environ.has_key('AVAKAS') and os.environ['AVAKAS']):
-            self.audio = False
-        
         if self.audio:            
             self.pa = pyaudio.PyAudio()
             self.stream = self.pa.open(format=pyaudio.paFloat32,
@@ -115,61 +112,60 @@ class DivaEnvironment(Environment):
         if self.diva_use_goal:
             self.max_params = self.max_params + [1.] * self.n_dmps_diva
         self.max_params = np.array(self.max_params)
-        
-        self.dmp = MyDMP(n_dmps=self.n_dmps_diva, n_bfs=self.n_bfs_diva, timesteps=self.move_steps, use_init=self.diva_use_initial, max_params=self.max_params)
-        
-        self.default_m = zeros(self.n_dmps_diva * self.n_bfs_diva + self.n_dmps_diva * self.diva_use_initial + self.n_dmps_diva * self.diva_use_goal)
-        self.default_m_traj = self.compute_motor_command(self.default_m)
-        self.default_sound = self.synth.execute(self.art.reshape(-1,1))[0]
-        self.default_formants = None
-        self.default_formants = self.compute_sensori_effect(self.default_m_traj)
-        
-        Environment.__init__(self, self.m_mins, self.m_maxs, self.s_mins, self.s_maxs)
+
+        self.default_formants = np.array([[8.76,10.65] for i in range(50)])
 
     def compute_motor_command(self, m_ag):
         return bounds_min_max(self.trajectory(m_ag), self.m_mins, self.m_maxs)
 
 
-    def compute_sensori_effect(self, m_env):
+    def compute_sensory_effect(self, m_env):
+        print "compute_sensory_effect"
+        #print shape(m_env)
+        #print m_env
         #print "compute_se", m_env
         if len(array(m_env).shape) == 1:
             self.art[self.m_used] = m_env
             #print self.art
             
-            if m_env == self.default_m:
-                res = self.default_sound
-            else:
-                res = self.synth.execute(2.*(self.art.reshape(-1,1)))[0]
+            #if m_env == self.default_m:
+            #    res = self.default_sound
+            #else:
+            res = self.synth.execute(2.*(self.art.reshape(-1,1)))[0]
             #print "compute_se result", res[self.s_used].flatten()
             formants = log2(transpose(res[self.s_used]))
             formants[isnan(formants)] = 0.
+            #print formants
             return formants
         else:
             
-            if self.default_formants is not None and (m_env == self.default_m_traj).all():
-                return self.default_formants
-            else:
-                self.art_traj = zeros((13, array(m_env).shape[0]))
-                #self.art_traj = zeros((13, array(m_env).shape[0]))
-                self.art_traj[10, :] = self.f0
-                self.art_traj[11, :] = self.pressure
-                self.art_traj[12, :] = self.voicing
-                self.art_traj[self.m_used,:] = transpose(m_env)
-                
-                res = self.synth.execute(2.*(self.art_traj))[0]
-                
-                #res = self.synth.execute(np.arctanh(self.art_traj))[0]
-                
-                #if isnan(sum(log2(transpose(res[self.s_used,:])))):
-                #    print "diva NaN:"
-    #                 print "m_env", m_env
-    #                 print "self.art_traj", self.art_traj, 
-    #                 print "res", res, 
-    #                 print "formants", log2(transpose(res[self.s_used,:]))
-                formants = log2(transpose(res[self.s_used,:]))
-                formants[isnan(formants)] = 0.
-                
-                return formants
+            #if self.default_formants is not None and (m_env == self.default_m_traj).all():
+            #    return self.default_formants
+            #else:
+            self.art_traj = zeros((13, array(m_env).shape[0]))
+            #self.art_traj = zeros((13, array(m_env).shape[0]))
+            self.art_traj[10, :] = self.f0
+            self.art_traj[11, :] = self.pressure
+            self.art_traj[12, :] = self.voicing
+            self.art_traj[self.m_used,:] = transpose(m_env)
+            
+            res = self.synth.execute(2.*(self.art_traj))[0]
+            
+            #res = self.synth.execute(np.arctanh(self.art_traj))[0]
+            
+            #if isnan(sum(log2(transpose(res[self.s_used,:])))):
+            #    print "diva NaN:"
+#                 print "m_env", m_env
+#                 print "self.art_traj", self.art_traj, 
+#                 print "res", res, 
+#                 print "formants", log2(transpose(res[self.s_used,:]))
+            formants = log2(transpose(res[self.s_used,:]))
+            formants[isnan(formants)] = 0.
+
+            if self.audio:
+                sound = self.sound_wave(self.art_traj)
+                self.stream.write(sound.astype(float32).tostring())
+            return formants
 
     def rest_params(self):
         dims = self.n_dmps_diva*self.n_bfs_diva
@@ -193,17 +189,7 @@ class DivaEnvironment(Environment):
             y = y[ls]
         #print "m diva", m, "traj diva", y
         return y
-        
-        
-    def update(self, mov, audio=True):
-        s = Environment.update(self, mov)
-        
-        if self.audio and audio:
-            sound = self.sound_wave(self.art_traj)
-            self.stream.write(sound.astype(float32).tostring())
-            #time.sleep(1)
-            #print "Sound sent", sound, len(sound)
-        return s    
+         
         #return [s_[0] for s_ in s] + [s_[1] for s_ in s] 
     
 #         if len(shape(array(s))) == 1:

@@ -55,10 +55,11 @@ catkin_python_setup()
 ## Generate messages in the 'msg' folder
 add_message_files(
   FILES
-  Demonstration.msg
   Interests.msg
   SensorialState.msg
   SensorialTrajectory.msg
+  SoundTrajectory.msg
+  VocalTrajectory.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -69,7 +70,7 @@ add_service_files(
   ExecuteTorsoTrajectory.srv
   Reset.srv
   SetTorsoCompliant.srv
-  ExecuteVocalTrajectory.srv
+  ExecuteAnalyseVocalTrajectory.srv
   Record.srv
   GetSensorialState.srv
   BaxterResult.srv
