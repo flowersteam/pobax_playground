@@ -87,9 +87,8 @@ class EnvironmentTranslatorDiva(object):
         #return  ((normalized_traj - np.array([-1.]*self.n_dmps))/2.) * (self.bounds_motors_max - self.bounds_motors_min) + self.bounds_motors_min
 
     def sensory_trajectory_msg_to_list(self, state):
-        s_torso = state.s_response_torso_sound.data
-        s_baxter = state.s_response_baxter_sound.data
-
+        s_torso = list(state.s_response_torso_sound.data)
+        s_baxter = list(state.s_response_baxter_sound.data)
         if len(s_torso) == 0:
             s_torso = [0.]*self.sound_torso_size
         if len(s_baxter) == 0:

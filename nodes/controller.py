@@ -156,7 +156,8 @@ class Learning_controller(object):
 class Voice_controller(object):
 
     def __init__(self):
-       self.services = {'exec_analyse': {'name': '/pobax_playground/voice/execute_analyse', 'type': ExecuteAnalyseVocalTrajectory}} 
+       self.services = {'exec_analyse': {'name': '/pobax_playground/voice/execute_analyse', 'type': ExecuteAnalyseVocalTrajectory},
+                        'baxter_analyse': {'name': '/pobax_playground/voice/baxter_analyse', 'type': BaxterAnalyseVocalTrajectory}} 
 
        for service_name, service in self.services.items():
             rospy.loginfo("Voice controller is waiting service {}...".format(service['name']))
@@ -164,10 +165,13 @@ class Voice_controller(object):
             service['call'] = rospy.ServiceProxy(service['name'], service['type'])
 
     def execute_analyse(self, trajectory_msg):
-
         request = ExecuteAnalyseVocalTrajectoryRequest(vocal_trajectory=trajectory_msg)
         response = self.services['exec_analyse']['call'](request)
         return response.torso_sound_trajectory, response.baxter_sound_trajectory, response.is_culbuto_name
+
+    def baxter_analyse(self, is_culbuto_touched):
+        request = BaxterAnalyseVocalTrajectoryRequest(is_culbuto_touched=is_culbuto_touched)
+        return self.services['baxter_analyse']['call'](request).baxter_sound_trajectory
 
 class Controller(object):
     def __init__(self):
@@ -189,16 +193,18 @@ class Controller(object):
         coords = msg.state.culbuto_1.pose.position
         return coords.x, coords.y, coords.z
 
-    # Loops while culbuto is still moving
+    # Loops while culbuto is still moving and returns the number of waiting loops
     def wait_motionless_culbuto(self):
         rospy.loginfo('Waiting for culbuto being immobile...')
         old_x,old_y,old_z = self.get_culb_coord(self.perception.get())
+        nb_iter = 0
         while not rospy.is_shutdown():
             rospy.sleep(0.1)
             cur_x, cur_y, cur_z = self.get_culb_coord(self.perception.get())
+            nb_iter += 1
             if (abs(cur_x-old_x) + abs(cur_y-old_y) + abs(cur_y-old_y)) < 0.001:
                 rospy.loginfo('Finished waiting, culbuto is motionless!')
-                return
+                return nb_iter
             old_x,old_y,old_z = cur_x,cur_y,cur_z
 
     # Returns True if culbuto is outside torso's armreach, False otw
@@ -232,6 +238,7 @@ class Controller(object):
 
                 if traj_msg.trajectory_type == "diva":
                     rospy.loginfo('Controller received a vocal trajectory')
+                    print np.shape(traj_msg.vocal_trajectory.data)
                     self.wait_motionless_culbuto()
                     s_response_torso_sound, s_response_baxter_sound, is_culbuto_name = self.voice.execute_analyse(traj_msg.vocal_trajectory)
                     #print "torso sounds:"
@@ -248,10 +255,14 @@ class Controller(object):
                             self.torso.reset(True)
                 elif traj_msg.trajectory_type == "arm":
                     rospy.loginfo('Controller received a torso trajectory')
+                    is_culbuto_touched = False
                     self.torso.execute_trajectory(traj_msg.torso_trajectory)
                     s_response_physical = self.perception.record(nb_points=self.params['nb_points']) #blocking
                     self.torso.reset(True)
-                    self.wait_motionless_culbuto() #blocking
+                    nb_waiting_iterations = self.wait_motionless_culbuto() #blocking
+                    if nb_waiting_iterations >= 2: # Culbuto was touched
+                        is_culbuto_touched = True
+                    s_response_baxter_sound = self.voice.baxter_analyse(is_culbuto_touched)
                 else:
                     rospy.logerr('Controller received an unknown trajectory type')
                 s_context = self.get_culb_coord(self.perception.get())

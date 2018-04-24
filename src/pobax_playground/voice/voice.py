@@ -3,10 +3,13 @@ import numpy as np
 import random
 import matplotlib.pyplot as plt
 import itertools
-
+from os.path import join
 from diva import Diva
 from explauto.utils import bounds_min_max
 from explauto.utils.utils import rand_bounds
+import pickle
+from rospkg.rospack import RosPack
+import rospy
 
 import brewer2mpl
 bmap = brewer2mpl.get_map('Dark2', 'qualitative', 6)
@@ -30,13 +33,23 @@ class Voice(object):
         self.pc = pc
    
         # SOUND CONFIG
-        
         self.v_o = list(np.log2([500, 900]))
         self.v_y = list(np.log2([300, 1700]))
         self.v_u = list(np.log2([300, 800]))
         self.v_e = list(np.log2([400, 2200]))
         self.v_i = list(np.log2([300, 2300]))
+
+        # Retrieve caregiver sounds and trajectories from json
+        self.rospack = RosPack()
+        with open(join(self.rospack.get_path('pobax_playground'), 'config', 'human_sounds.pickle')) as f:
+            self.full_human_motor_traj, self.full_human_sounds_traj  = pickle.load(f)
+        self.human_sounds = self.full_human_sounds_traj.keys()
+        rospy.loginfo('Voice node using the following human words: %s' % self.human_sounds)
+
+
+
         
+        '''
         self.vowels = dict(o=self.v_o, y=self.v_y, u=self.v_u, e=self.v_e, i=self.v_i)
         
         # Create human sounds as all possible sequences of 3 vowels
@@ -45,15 +58,13 @@ class Voice(object):
         for _ in range(60): self.human_sounds.append("".join(list(it.next())))        
         random.shuffle(self.human_sounds)
         print "human sounds", self.human_sounds
-        
-        def compute_s_sound(sound):
-            s1 = self.vowels[sound[0]]
-            s2 = [(self.vowels[sound[0]][0] + self.vowels[sound[1]][0]) / 2., (self.vowels[sound[0]][1] + self.vowels[sound[1]][1]) / 2.]
-            s3 = self.vowels[sound[1]]
-            s4 = [(self.vowels[sound[1]][0] + self.vowels[sound[2]][0]) / 2., (self.vowels[sound[1]][1] + self.vowels[sound[2]][1]) / 2.]
-            s5 = self.vowels[sound[2]]
-            rdm = 0.0 * (2.*np.random.random((1,10))[0] - 1.)
-            return list(rdm + np.array([f[0] for f in [s1, s2, s3, s4, s5]] + [f[1] for f in [s1, s2, s3, s4, s5]]))
+        '''
+        def compress_sound_traj(sound):
+            assert(len(sound) == 100)
+            f1s = sound[:50]
+            f3s = sound[50:]
+            return np.append(f1s[np.array([0, 12, 24, 37, 49])],f3s[np.array([0, 12, 24, 37, 49])])
+            
         
       
         self.human_sounds_traj = dict()
@@ -62,7 +73,7 @@ class Voice(object):
         self.best_vocal_errors_evolution = []
         for hs in self.human_sounds:
             self.best_vocal_errors[hs] = 10.
-            self.human_sounds_traj[hs] = compute_s_sound(hs)
+            self.human_sounds_traj[hs] = compress_sound_traj(self.full_human_sounds_traj[hs])
             self.human_sounds_traj_std[hs] = [d - 8.5 for d in self.human_sounds_traj[hs][:5]] + [d - 10.25 for d in self.human_sounds_traj[hs][5:]]    
         
 
@@ -120,11 +131,11 @@ class Voice(object):
         
         if toy == "culbuto_1":
             #print "Caregiver says", self.human_sounds[0] 
-            return self.human_sounds_traj[self.human_sounds[0]]
+            return self.human_sounds[0], self.human_sounds_traj[self.human_sounds[0]]
         elif toy == "distractor":
             sound_id = np.random.choice(range(60))
             #print "Caregiver says", self.human_sounds[sound_id]
-            return self.human_sounds_traj[self.human_sounds[sound_id]]            
+            return self.human_sounds[sound_id], self.human_sounds_traj[self.human_sounds[sound_id]]            
         else:
             raise NotImplementedError
         
@@ -169,7 +180,31 @@ class Voice(object):
 #         else:
 #             if touched_toy:
 #                 print "no answer"
-        
+
+
+    def baxter_analyse(self, is_culbuto_touched):
+        # CAREGIVER VOCAL REACTION
+        caregiver_answer = self.get_caregiver_answer(is_culbuto_touched)
+        #print caregiver_answer
+        sound_id = None
+        if caregiver_answer == "contingent":
+            if is_culbuto_touched:
+                print "CULBUTO WAS TOUCHED HIP HIP HIP HOURRRAY"
+                sound_id, self.caregiver_sound = self.give_label("culbuto_1")
+
+        elif caregiver_answer == "distractor":
+            sound_id, self.caregiver_sound = self.give_label("distractor")
+        else:
+            # No sound
+            self.caregiver_sound = None
+
+        if not sound_id == None: #Play word choosen by caregiver
+            self.diva.compute_sensory_effect(self.full_human_motor_traj[sound_id],sound_power=30.)
+        return self.caregiver_sound
+
+    # Generate and play sound from diva trajectory
+    # Returns a 10-D sound trajectory for baxter and torso
+    # And a boolean set to True if the sound was culbuto's name      
     def execute_analyse(self, diva_traj):
         t = time.time()
         events = dict()
@@ -206,11 +241,11 @@ class Voice(object):
         
         if caregiver_answer == "contingent":
             if is_culbuto_name:
-                self.caregiver_sound = self.give_label("culbuto_1")
+                _, self.caregiver_sound = self.give_label("culbuto_1")
                 events["caregiver_voc_culbuto"] = True
 
         elif caregiver_answer == "distractor":
-            self.caregiver_sound = self.give_label("distractor")
+            _, self.caregiver_sound = self.give_label("distractor")
             events["caregiver_voc_distractor"] = True
         else:
             # No sound

@@ -71,6 +71,7 @@ add_service_files(
   Reset.srv
   SetTorsoCompliant.srv
   ExecuteAnalyseVocalTrajectory.srv
+  BaxterAnalyseVocalTrajectory.srv
   Record.srv
   GetSensorialState.srv
   BaxterResult.srv

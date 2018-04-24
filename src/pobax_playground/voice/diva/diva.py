@@ -118,9 +118,9 @@ class Diva(object):
     def compute_motor_command(self, m_ag):
         return bounds_min_max(self.trajectory(m_ag), self.m_mins, self.m_maxs)
 
-
-    def compute_sensory_effect(self, m_env):
-        print "compute_sensory_effect"
+    def compute_sensory_effect(self, m_env, sound_power=2.):
+        #print "compute_sensory_effect"
+        #print array(m_env).shape
         #print shape(m_env)
         #print m_env
         #print "compute_se", m_env
@@ -163,7 +163,7 @@ class Diva(object):
             formants[isnan(formants)] = 0.
 
             if self.audio:
-                sound = self.sound_wave(self.art_traj)
+                sound = self.sound_wave(self.art_traj, power=sound_power)
                 self.stream.write(sound.astype(float32).tostring())
             return formants
 
