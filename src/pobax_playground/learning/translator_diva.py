@@ -89,6 +89,10 @@ class EnvironmentTranslatorDiva(object):
     def sensory_trajectory_msg_to_list(self, state):
         s_torso = list(state.s_response_torso_sound.data)
         s_baxter = list(state.s_response_baxter_sound.data)
+        #print "raw_sound_torso"
+        #print s_torso
+        #print "raw_sound_baxter"
+        #print s_baxter
         if len(s_torso) == 0:
             s_torso = [0.]*self.sound_torso_size
         if len(s_baxter) == 0:

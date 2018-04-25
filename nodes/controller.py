@@ -218,8 +218,21 @@ class Controller(object):
             return True
         return False
 
-
-
+    # Returns True if culbuto has been touched during torso's movement, False otw
+    def is_culbuto_touched(self,s_response_physical):
+        thr = 1e-07 #variance threshold
+        xs = []
+        ys = []
+        zs = []
+        for point in s_response_physical.points:
+            xs.append(round(point.culbuto_1.pose.position.x,4))
+            ys.append(round(point.culbuto_1.pose.position.y,4))
+            zs.append(round(point.culbuto_1.pose.position.z,4))
+        if (np.var(xs) > thr) or (np.var(xs) > thr) or (np.var(xs) > thr):
+            print "CULBUTO HAS MOVED"
+            return True
+        else:
+            return False
 
     def run(self):
         rospy.loginfo("controller node up and running")
@@ -238,7 +251,7 @@ class Controller(object):
 
                 if traj_msg.trajectory_type == "diva":
                     rospy.loginfo('Controller received a vocal trajectory')
-                    print np.shape(traj_msg.vocal_trajectory.data)
+                    #print np.shape(traj_msg.vocal_trajectory.data)
                     self.wait_motionless_culbuto()
                     s_response_torso_sound, s_response_baxter_sound, is_culbuto_name = self.voice.execute_analyse(traj_msg.vocal_trajectory)
                     #print "torso sounds:"
@@ -255,13 +268,10 @@ class Controller(object):
                             self.torso.reset(True)
                 elif traj_msg.trajectory_type == "arm":
                     rospy.loginfo('Controller received a torso trajectory')
-                    is_culbuto_touched = False
                     self.torso.execute_trajectory(traj_msg.torso_trajectory)
                     s_response_physical = self.perception.record(nb_points=self.params['nb_points']) #blocking
                     self.torso.reset(True)
-                    nb_waiting_iterations = self.wait_motionless_culbuto() #blocking
-                    if nb_waiting_iterations >= 2: # Culbuto was touched
-                        is_culbuto_touched = True
+                    is_culbuto_touched = self.is_culbuto_touched(s_response_physical)
                     s_response_baxter_sound = self.voice.baxter_analyse(is_culbuto_touched)
                 else:
                     rospy.logerr('Controller received an unknown trajectory type')

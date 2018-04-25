@@ -101,6 +101,10 @@ class LearningNode(object):
         s_physical = self.arm_translator.sensory_trajectory_msg_to_list(request)
         s_sound = self.diva_translator.sensory_trajectory_msg_to_list(request)
         rospy.loginfo("Learning node is perceiving sensory trajectory")
+        #print "physical"
+        #print s_physical
+        #print "sound"
+        #print s_sound
         success = self.learning.perceive(np.append(s_physical, s_sound))
         if not success:
             rospy.logerr("Learner could not perceive this trajectory")
