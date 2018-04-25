@@ -44,7 +44,9 @@ class Voice(object):
         with open(join(self.rospack.get_path('pobax_playground'), 'config', 'human_sounds.pickle')) as f:
             self.full_human_motor_traj, self.full_human_sounds_traj  = pickle.load(f)
         self.human_sounds = self.full_human_sounds_traj.keys()
-        rospy.loginfo('Voice node using the following human words: %s' % self.human_sounds)
+        rospy.loginfo('Voice node using the word %s for culbuto name' % self.human_sounds[0])
+
+
 
 
 
@@ -96,6 +98,8 @@ class Voice(object):
             self.count_produced_sounds[hs] = 0
             
         self.events = dict()
+
+        self.audio = audio
         
         self.time_arm = 0.
         self.time_diva = 0. 
@@ -115,7 +119,7 @@ class Voice(object):
                         m_used = range(7),
                         s_used = range(1, 3),
                         rest_position_diva = list([0]*7),
-                        audio = audio,
+                        audio = self.audio,
                         diva_use_initial = True,
                         diva_use_goal = True,
                         used_diva = list([True]*7),
@@ -131,17 +135,16 @@ class Voice(object):
         
         if toy == "culbuto_1":
             #print "Caregiver says", self.human_sounds[0] 
-            return self.human_sounds[0], self.human_sounds_traj[self.human_sounds[0]]
+            return self.human_sounds[0], self.human_sounds_traj_std[self.human_sounds[0]]
         elif toy == "distractor":
             sound_id = np.random.choice(range(60))
             #print "Caregiver says", self.human_sounds[sound_id]
-            return self.human_sounds[sound_id], self.human_sounds_traj[self.human_sounds[sound_id]]            
+            return self.human_sounds[sound_id], self.human_sounds_traj_std[self.human_sounds[sound_id]]            
         else:
             raise NotImplementedError
         
     def analysis_sound(self, diva_traj):
         #return self.human_sounds[2]
-        #print "hmu"
         #print self.human_sounds_traj
         for hs in self.human_sounds:          
             error = np.linalg.norm(np.array(self.human_sounds_traj[hs]) - np.array([f[0] for f in diva_traj[[0, 12, 24, 37, 49]]] + [f[1] for f in diva_traj[[0, 12, 24, 37, 49]]]))
@@ -198,7 +201,7 @@ class Voice(object):
             # No sound
             self.caregiver_sound = None
 
-        if not sound_id == None: #Play word choosen by caregiver
+        if not sound_id == None and self.audio: #Play word choosen by caregiver
             self.diva.compute_sensory_effect(self.full_human_motor_traj[sound_id],sound_power=30.)
         return self.caregiver_sound
 
@@ -222,23 +225,21 @@ class Voice(object):
         self.produced_sound = self.analysis_sound(self.raw_produced_sound)
         if self.produced_sound is not None:
             self.count_produced_sounds[self.produced_sound] += 1
-            if self.produced_sound in self.human_sounds[:1]:                    
+            if self.produced_sound in self.human_sounds[0]:                    
                 self.count_parent_give_object += 1
 
 
             # parent gives object if label is produced and object out of reach
             if self.produced_sound == self.human_sounds[0]:
                 is_culbuto_name = True
+                print "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!CULBUTO NAME WAS PRONOUNCED"
 
         self.self_sound = [f for formants in self.raw_produced_sound[[0, 12, 24, 37, 49]] for f in formants]
         self.self_sound = self.self_sound[0::2] + self.self_sound[1::2]
             
 
         # CAREGIVER VOCAL REACTION
-        #moved_toy = cmd == "arm" and (self.current_toy1[2] >= 1) or (self.current_toy2[2] >= 1) or (self.current_toy3[2] >= 1)
-        produced_toyname = self.produced_sound is not None
-        caregiver_answer = self.get_caregiver_answer(produced_toyname)
-        
+        caregiver_answer = self.get_caregiver_answer(is_culbuto_name)
         if caregiver_answer == "contingent":
             if is_culbuto_name:
                 _, self.caregiver_sound = self.give_label("culbuto_1")

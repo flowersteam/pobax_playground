@@ -229,7 +229,6 @@ class Controller(object):
             ys.append(round(point.culbuto_1.pose.position.y,4))
             zs.append(round(point.culbuto_1.pose.position.z,4))
         if (np.var(xs) > thr) or (np.var(xs) > thr) or (np.var(xs) > thr):
-            print "CULBUTO HAS MOVED"
             return True
         else:
             return False
@@ -238,10 +237,17 @@ class Controller(object):
         rospy.loginfo("controller node up and running")
         nb_iterations = rospy.get_param('/pobax_playground/iterations')
         self.iteration = self.starting_iteration
+
+        #Book-keeping
+        self.nb_culbuto_touched = 0
+        self.nb_culbuto_pronounced = 0
+        self.nb_motor_it = 0
+        self.nb_sound_it = 0
         try:
             while not rospy.is_shutdown() and self.iteration < nb_iterations:
                 self.iteration += 1
                 rospy.logwarn("#### Iteration {}/{}".format(self.iteration, nb_iterations))
+                rospy.logwarn("Book-keeping: culb_touched= {}, culb_said={}, nb_motor: {}, nb_sound: {}".format(self.nb_culbuto_touched, self.nb_culbuto_pronounced, self.nb_motor_it, self.nb_sound_it))
                 # Init sensorial responses
                 s_response_physical = None
                 s_response_torso_sound = None
@@ -250,6 +256,7 @@ class Controller(object):
                 traj_msg = self.learning.produce()
 
                 if traj_msg.trajectory_type == "diva":
+                    self.nb_sound_it += 1
                     rospy.loginfo('Controller received a vocal trajectory')
                     #print np.shape(traj_msg.vocal_trajectory.data)
                     self.wait_motionless_culbuto()
@@ -258,6 +265,7 @@ class Controller(object):
                     #print s_response_torso_sound
                     self.wait_motionless_culbuto() #blocking
                     if is_culbuto_name:
+                        self.nb_culbuto_pronounced += 1
                         #checks wether baxter must replace culbuto at Torso's arm reach
                         if self.is_culbuto_too_far():
                             self.torso.set_safe_pose() #should be a blocking call
@@ -267,11 +275,13 @@ class Controller(object):
                             self.baxter.reset(blocking=False)
                             self.torso.reset(True)
                 elif traj_msg.trajectory_type == "arm":
+                    self.nb_motor_it += 1
                     rospy.loginfo('Controller received a torso trajectory')
                     self.torso.execute_trajectory(traj_msg.torso_trajectory)
                     s_response_physical = self.perception.record(nb_points=self.params['nb_points']) #blocking
                     self.torso.reset(True)
                     is_culbuto_touched = self.is_culbuto_touched(s_response_physical)
+                    if is_culbuto_touched: self.nb_culbuto_touched += 1
                     s_response_baxter_sound = self.voice.baxter_analyse(is_culbuto_touched)
                 else:
                     rospy.logerr('Controller received an unknown trajectory type')

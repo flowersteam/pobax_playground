@@ -49,11 +49,11 @@ class Supervisor(object):
         
         # Create the learning modules:
         self.modules['mod1'] = LearningModule("mod1", self.m_arm, self.s_hand, self.conf, explo_noise=self.explo_noise)
-        self.modules['mod3'] = LearningModule("mod3", self.m_arm, self.c_dims + self.s_culbuto_1, self.conf, context_mode=dict(mode='mcs', context_dims=[0, 1, 2], context_n_dims=3, context_sensory_bounds=[[-2.]*3,[2.]*3]), explo_noise=self.explo_noise)
-        #self.modules['mod6'] = LearningModule("mod6", self.m_arm, self.c_dims[2:8] + self.s_caregiver_sound, self.conf, context_mode=dict(mode='mcs', context_dims=[2, 3, 4, 5, 6, 7], context_n_dims=6, context_sensory_bounds=[[-1.]*6,[1.]*6]), explo_noise=self.explo_noise)
-        self.modules['mod12'] = LearningModule("mod12", self.m_diva, self.c_dims + self.s_culbuto_1, self.conf, context_mode=dict(mode='mcs', context_dims=[0, 1, 2], context_n_dims=3, context_sensory_bounds=[[-2.]*3,[2.]*3]), explo_noise=self.explo_noise)
+        self.modules['mod3'] = LearningModule("mod3", self.m_arm,self.c_dims + self.s_culbuto_1, self.conf, context_mode=dict(mode='mcs', context_dims=[0,1,2], context_n_dims=3, context_sensory_bounds=[[-2.]*3,[2.]*3]), explo_noise=self.explo_noise)
+        self.modules['mod6'] = LearningModule("mod6", self.m_arm, self.c_dims + self.s_caregiver_sound, self.conf, context_mode=dict(mode='mcs', context_dims=[0,1,2], context_n_dims=6, context_sensory_bounds=[[-1.]*6,[1.]*6]), explo_noise=self.explo_noise)
+        self.modules['mod12'] = LearningModule("mod12", self.m_diva, self.c_dims + self.s_culbuto_1, self.conf, context_mode=dict(mode='mcs', context_dims=[0,1,2], context_n_dims=3, context_sensory_bounds=[[-2.]*3,[2.]*3]), explo_noise=self.explo_noise)
         self.modules['mod13'] = LearningModule("mod13", self.m_diva, self.s_self_sound, self.conf, explo_noise=self.explo_noise)
-        self.modules['mod14'] = LearningModule("mod14", self.m_diva, self.s_caregiver_sound, self.conf, explo_noise=self.explo_noise)
+        self.modules['mod14'] = LearningModule("mod14", self.m_diva, self.s_caregiver_sound, self.conf, imitate=["mod6", "mod14"], explo_noise=self.explo_noise)
          
 
         for mid in self.modules.keys():
