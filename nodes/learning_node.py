@@ -14,6 +14,7 @@ from threading import RLock
 from copy import copy
 from os.path import isfile
 import numpy as np
+import pickle
 
 
 class LearningNode(object):
@@ -134,7 +135,9 @@ class LearningNode(object):
 
     def cb_save(self, request):
         rospy.loginfo("Learning node saving current state...")
-        self.learning.save(self.experiment_file)
+        data = self.learning.save()
+        with open(self.experiment_file, 'w') as f:
+            pickle.dump(data, f)
         rospy.loginfo("Saved file (periodic save) into {}".format(self.experiment_file))
         return SaveResponse()
 

@@ -43,10 +43,9 @@ class Learning(object):
             data = pickle.load(f)
         return data
                 
-    def save(self, file_path):        
-        data = self.agent.save() 
-        with open(file_path, 'w') as f:
-            pickle.dump(data, f)
+    def save(self):        
+        return self.agent.save() 
+
     
     def start(self):
         self.agent = Supervisor(self.config,
