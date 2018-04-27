@@ -38,10 +38,11 @@ class VoiceNode(object):
 
     def cb_execute_analyse(self,request):
         rospy.loginfo('Voice node producing sound...')
-        torso_sound_traj, baxter_sound_traj, is_culb_name = self.voice.execute_analyse(request.vocal_trajectory.data)
+        torso_sound_traj, baxter_sound_traj, is_culb_name, produced_name = self.voice.execute_analyse(request.vocal_trajectory.data)
         return ExecuteAnalyseVocalTrajectoryResponse(torso_sound_trajectory=SoundTrajectory(data=torso_sound_traj),
                                                      baxter_sound_trajectory=SoundTrajectory(data=baxter_sound_traj),
-                                                     is_culbuto_name=is_culb_name)
+                                                     is_culbuto_name=is_culb_name,
+                                                     produced_name=produced_name)
 
 rospy.init_node('voice')
 VoiceNode().run()

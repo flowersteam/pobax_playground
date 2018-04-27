@@ -36,7 +36,7 @@ class LearningModule(Agent):
         self.imitated_sounds = []
         
         # Only used for stats:
-        self.toynames = []
+        self.toynames = ['culbuto_1']
         
         if context_mode is not None:
             im_cls, kwargs = (ContextRandomInterest, {
@@ -137,7 +137,7 @@ class LearningModule(Agent):
                 #print "goals proba", [g[1]/psum for g in goals]
                 av = np.mean([float(g[1]) for g in goals])
                 print "toys occurences", 
-                for i in [0, 1, 2]:
+                for i in [0]:
                     if self.goal_dict.has_key(self.toynames[i]):
                         print float(self.goal_dict[self.toynames[i]][1]) / av,
                 print

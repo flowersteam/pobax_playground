@@ -46,11 +46,15 @@ class Supervisor(object):
                              s_culbuto_1=self.s_culbuto_1,
                              s_self_sound=self.s_self_sound, 
                              s_caregiver_sound=self.s_caregiver_sound)
+
+        self.arm_modules = ['mod1','mod3','mod6']
+        self.diva_modules = ['mod12','mod13','mod14']
+        self.arm_goal_selection = 0.2
         
         # Create the learning modules:
         self.modules['mod1'] = LearningModule("mod1", self.m_arm, self.s_hand, self.conf, explo_noise=self.explo_noise)
         self.modules['mod3'] = LearningModule("mod3", self.m_arm,self.c_dims + self.s_culbuto_1, self.conf, context_mode=dict(mode='mcs', context_dims=[0,1,2], context_n_dims=3, context_sensory_bounds=[[-2.]*3,[2.]*3]), explo_noise=self.explo_noise)
-        self.modules['mod6'] = LearningModule("mod6", self.m_arm, self.c_dims + self.s_caregiver_sound, self.conf, context_mode=dict(mode='mcs', context_dims=[0,1,2], context_n_dims=6, context_sensory_bounds=[[-1.]*6,[1.]*6]), explo_noise=self.explo_noise)
+        self.modules['mod6'] = LearningModule("mod6", self.m_arm, self.c_dims + self.s_caregiver_sound, self.conf, context_mode=dict(mode='mcs', context_dims=[0,1,2], context_n_dims=3, context_sensory_bounds=[[-2.]*3,[2.]*3]), explo_noise=self.explo_noise)
         self.modules['mod12'] = LearningModule("mod12", self.m_diva, self.c_dims + self.s_culbuto_1, self.conf, context_mode=dict(mode='mcs', context_dims=[0,1,2], context_n_dims=3, context_sensory_bounds=[[-2.]*3,[2.]*3]), explo_noise=self.explo_noise)
         self.modules['mod13'] = LearningModule("mod13", self.m_diva, self.s_self_sound, self.conf, explo_noise=self.explo_noise)
         self.modules['mod14'] = LearningModule("mod14", self.m_diva, self.s_caregiver_sound, self.conf, imitate=["mod6", "mod14"], explo_noise=self.explo_noise)
@@ -114,7 +118,11 @@ class Supervisor(object):
         for mid in self.modules.keys():
             interests[mid] = self.modules[mid].interest()
         if self.model_babbling == 'random':
-            mid = np.random.choice(interests.keys())
+            #mid = np.random.choice(interests.keys())
+            if np.random.random() < self.arm_goal_selection:
+                mid = np.random.choice(self.arm_modules)
+            else:
+                mid = np.random.choice(self.diva_modules)
         elif self.model_babbling == 'hand_object_sound':
             if np.random.random() < 1. / 3.:
                 mid = 'mod1'
@@ -170,7 +178,7 @@ class Supervisor(object):
             self.last_cmd = "diva"
         else:
             r = np.random.random()
-        if r < 0.5:
+        if r > self.arm_goal_selection:
             self.m[:self.arm_n_dims] = 0.
             self.last_cmd = "diva"
         else:

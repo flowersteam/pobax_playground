@@ -2,6 +2,8 @@
   "nb_points": 10,
   "baxter_grasp_bound_x": 0.360,
   "baxter_grasp_bound_line": [[0.360,0.456],[-0.364,-0.219]],
+  "culbuto_height_limit": 0.06,
   "baxter_result_refresh_rate": 20,
-  "save_every": 100
+  "save_every": 100,
+  "reset_every": 20
 }

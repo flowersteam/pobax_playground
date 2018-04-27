@@ -11,9 +11,12 @@ from pobax_playground.msg import *
 from std_msgs.msg import UInt8
 from trajectory_msgs.msg import JointTrajectory
 from geometry_msgs.msg import Point
+from pobax_playground.tools.audio_help import AudioHelp
 import numpy as np
 import actionlib
 import pickle
+import pyaudio  
+import wave
 
 class Perception_controller(object):
     def __init__(self):
@@ -83,6 +86,8 @@ class Baxter_controller(object):
 
         self.rate = rospy.Rate(result_rate)
 
+        self.audio_help = AudioHelp()
+
     def send_command(self,cmd):
         try:
             resp1 = self.services['command']['call'](cmd)
@@ -109,11 +114,15 @@ class Baxter_controller(object):
         self.services['command']['call']('g1')
         result_status = self.wait_for_result()      
         if result_status != 3:
+            self.audio_help.play('grasp')
             raw_input("Baxter could not grasp culbuto, please help him and press enter")
 
         self.services['command']['call']('p1')
         result_status = self.wait_for_result()
-        
+        if result_status != 3:
+            self.audio_help.play('place')
+            raw_input("Baxter could not place culbuto, please help him and press enter")
+
         rospy.loginfo('replaced !')
 
     def reset(self,blocking=True):
@@ -123,6 +132,7 @@ class Baxter_controller(object):
         if blocking:
             result_status = self.wait_for_result()
             if result_status != 3:
+                self.audio_help.play('reset')
                 raw_input("Baxter could not reset, please help him and press enter")
 
 
@@ -168,7 +178,7 @@ class Voice_controller(object):
     def execute_analyse(self, trajectory_msg):
         request = ExecuteAnalyseVocalTrajectoryRequest(vocal_trajectory=trajectory_msg)
         response = self.services['exec_analyse']['call'](request)
-        return response.torso_sound_trajectory, response.baxter_sound_trajectory, response.is_culbuto_name
+        return response.torso_sound_trajectory, response.baxter_sound_trajectory, response.is_culbuto_name, response.produced_name
 
     def baxter_analyse(self, is_culbuto_touched):
         request = BaxterAnalyseVocalTrajectoryRequest(is_culbuto_touched=is_culbuto_touched)
@@ -197,8 +207,27 @@ class Controller(object):
             os.makedirs(self.dir)
         self.experiment_bk_file = join(self.dir, self.experiment_name + 'book_keeping.pickle')
 
+        # Sound setting
+        self.audio_help = AudioHelp()
+
+
         rospy.loginfo('Controller fully started!')
 
+    def play_help_msg(self,msg_name):
+        #read data 
+        f = self.help_msg[msg_name]['file']
+        data = f.readframes(self.chunk)
+        stream = self.p.open(format = self.p.get_format_from_width(f.getsampwidth()),  
+            channels = f.getnchannels(),  
+            rate = f.getframerate(),  
+            output = True) 
+        #play stream  
+        while data:  
+            stream.write(data)  
+            data = f.readframes(self.chunk)  
+        #stop stream  
+        stream.stop_stream() 
+        stream.close()
 
     def save_bk(self, book_keeping_dict):
         with open(self.experiment_bk_file, 'w') as f:
@@ -254,6 +283,12 @@ class Controller(object):
         else:
             return False
 
+    # Checks wether culbuto is still in the playground, ask user to put it back otw
+    def ensure_culbuto_safe_pos(self, culb_coord):
+        if culb_coord[1] > self.params['culbuto_height_limit']:
+            self.audio_help.play('away')
+            raw_input("Culbuto out of playground, please set it back and press enter")
+
     def run(self):
         rospy.loginfo("controller node up and running")
         nb_iterations = rospy.get_param('/pobax_playground/iterations')
@@ -268,27 +303,33 @@ class Controller(object):
             b_k['nb_culbuto_pronounced'] = 0
             b_k['nb_motor_it'] = 0
             b_k['nb_sound_it'] = 0
+            b_k['produced_names'] = dict()
         try:
             while not rospy.is_shutdown() and self.iteration < nb_iterations:
                 self.iteration += 1
                 rospy.logwarn("#### Iteration {}/{}".format(self.iteration, nb_iterations))
                 rospy.logwarn("Book-keeping: culb_touched= {}, culb_said={}, nb_motor: {}, nb_sound: {}".format(b_k['nb_culbuto_touched'], b_k['nb_culbuto_pronounced'], b_k['nb_motor_it'], b_k['nb_sound_it']))
+                rospy.logwarn("List of torso's produced sounds: {}".format(b_k['produced_names']))
                 # Init sensorial responses
                 s_response_physical = None
                 s_response_torso_sound = None
                 s_response_baxter_sound = None
 
                 traj_msg = self.learning.produce()
-
+                self.wait_motionless_culbuto()
                 if traj_msg.trajectory_type == "diva":
                     b_k['nb_sound_it'] += 1
                     rospy.loginfo('Controller received a vocal trajectory')
                     #print np.shape(traj_msg.vocal_trajectory.data)
-                    self.wait_motionless_culbuto()
-                    s_response_torso_sound, s_response_baxter_sound, is_culbuto_name = self.voice.execute_analyse(traj_msg.vocal_trajectory)
+                    s_response_torso_sound, s_response_baxter_sound, is_culbuto_name, produced_name = self.voice.execute_analyse(traj_msg.vocal_trajectory)
                     #print "torso sounds:"
                     #print s_response_torso_sound
                     self.wait_motionless_culbuto() #blocking
+                    if produced_name:
+                        if not produced_name in b_k['produced_names']: 
+                            b_k['produced_names'][produced_name] = 1
+                        else:
+                            b_k['produced_names'][produced_name] += 1
                     if is_culbuto_name:
                         b_k['nb_culbuto_pronounced'] += 1
                         #checks wether baxter must replace culbuto at Torso's arm reach
@@ -299,6 +340,7 @@ class Controller(object):
                             s_response_physical = self.perception.stop_recording()
                             self.baxter.reset(blocking=False)
                             self.torso.reset(True)
+                            self.ensure_culbuto_safe_pos(self.get_culb_coord(self.perception.get()))
                 elif traj_msg.trajectory_type == "arm":
                     b_k['nb_motor_it'] += 1
                     rospy.loginfo('Controller received a torso trajectory')
@@ -312,6 +354,17 @@ class Controller(object):
                     rospy.logerr('Controller received an unknown trajectory type')
                 s_context = self.get_culb_coord(self.perception.get())
                 self.learning.perceive(s_context, s_response_physical, s_response_torso_sound, s_response_baxter_sound)
+
+                self.ensure_culbuto_safe_pos(self.get_culb_coord(self.perception.get()))
+                # Reset culbuto periodically
+                if self.iteration % self.params['reset_every'] == 0:
+                    if self.is_culbuto_too_far():
+                        rospy.loginfo("Periodic reset of culbuto (which is too far for torso)")
+                        self.torso.set_safe_pose() #should be a blocking call
+                        self.baxter.replace()
+                        self.baxter.reset(blocking=False)
+                        self.torso.reset(True)
+                self.ensure_culbuto_safe_pos(self.get_culb_coord(self.perception.get()))
                 if self.iteration % self.params['save_every'] == 0:
                     self.learning.save()
                     self.save_bk(b_k)
