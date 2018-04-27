@@ -49,7 +49,7 @@ class Supervisor(object):
 
         self.arm_modules = ['mod1','mod3','mod6']
         self.diva_modules = ['mod12','mod13','mod14']
-        self.arm_goal_selection = 0.2
+        self.arm_goal_selection = 0.1
         
         # Create the learning modules:
         self.modules['mod1'] = LearningModule("mod1", self.m_arm, self.s_hand, self.conf, explo_noise=self.explo_noise)

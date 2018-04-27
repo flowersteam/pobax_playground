@@ -314,9 +314,10 @@ class Controller(object):
                 s_response_physical = None
                 s_response_torso_sound = None
                 s_response_baxter_sound = None
-
-                traj_msg = self.learning.produce()
+                self.ensure_culbuto_safe_pos(self.get_culb_coord(self.perception.get()))
                 self.wait_motionless_culbuto()
+                traj_msg = self.learning.produce()
+                s_context = self.get_culb_coord(self.perception.get())
                 if traj_msg.trajectory_type == "diva":
                     b_k['nb_sound_it'] += 1
                     rospy.loginfo('Controller received a vocal trajectory')
@@ -324,7 +325,6 @@ class Controller(object):
                     s_response_torso_sound, s_response_baxter_sound, is_culbuto_name, produced_name = self.voice.execute_analyse(traj_msg.vocal_trajectory)
                     #print "torso sounds:"
                     #print s_response_torso_sound
-                    self.wait_motionless_culbuto() #blocking
                     if produced_name:
                         if not produced_name in b_k['produced_names']: 
                             b_k['produced_names'][produced_name] = 1
@@ -340,7 +340,6 @@ class Controller(object):
                             s_response_physical = self.perception.stop_recording()
                             self.baxter.reset(blocking=False)
                             self.torso.reset(True)
-                            self.ensure_culbuto_safe_pos(self.get_culb_coord(self.perception.get()))
                 elif traj_msg.trajectory_type == "arm":
                     b_k['nb_motor_it'] += 1
                     rospy.loginfo('Controller received a torso trajectory')
@@ -352,7 +351,7 @@ class Controller(object):
                     s_response_baxter_sound = self.voice.baxter_analyse(is_culbuto_touched)
                 else:
                     rospy.logerr('Controller received an unknown trajectory type')
-                s_context = self.get_culb_coord(self.perception.get())
+
                 self.learning.perceive(s_context, s_response_physical, s_response_torso_sound, s_response_baxter_sound)
 
                 self.ensure_culbuto_safe_pos(self.get_culb_coord(self.perception.get()))
