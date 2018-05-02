@@ -13,8 +13,9 @@ class DemonstrableNN(NonParametric):
         NonParametric.__init__(self, conf, sigma_explo_ratio, fwd, inv, **learner_kwargs)        
         
     def save(self):
-        return [[np.array(self.model.imodel.fmodel.dataset.get_x(i), dtype=np.float16) for i in range(len(self.model.imodel.fmodel.dataset))],
-                [np.array(self.model.imodel.fmodel.dataset.get_y(i), dtype=np.float16) for i in range(len(self.model.imodel.fmodel.dataset))]]
+        return [[self.model.imodel.fmodel.dataset.get_x(i) for i in range(len(self.model.imodel.fmodel.dataset))],
+                [self.model.imodel.fmodel.dataset.get_y(i) for i in range(len(self.model.imodel.fmodel.dataset))],
+                self.bootstrapped_s]
     
     def forward(self, data, iteration):
         self.model.imodel.fmodel.dataset.add_xy_batch(data[0][:iteration], data[1][:iteration])

@@ -48,17 +48,17 @@ class Supervisor(object):
                              s_caregiver_sound=self.s_caregiver_sound)
 
         self.arm_modules = ['mod1','mod3','mod6']
-        self.diva_modules = ['mod12','mod13','mod14']
-        self.arm_goal_selection = 0.1
+        self.diva_modules = ['mod12','mod14']
+        self.arm_goal_selection = 0.20
         
         # Create the learning modules:
         self.modules['mod1'] = LearningModule("mod1", self.m_arm, self.s_hand, self.conf, explo_noise=self.explo_noise)
         self.modules['mod3'] = LearningModule("mod3", self.m_arm,self.c_dims + self.s_culbuto_1, self.conf, context_mode=dict(mode='mcs', context_dims=[0,1,2], context_n_dims=3, context_sensory_bounds=[[-2.]*3,[2.]*3]), explo_noise=self.explo_noise)
         self.modules['mod6'] = LearningModule("mod6", self.m_arm, self.c_dims + self.s_caregiver_sound, self.conf, context_mode=dict(mode='mcs', context_dims=[0,1,2], context_n_dims=3, context_sensory_bounds=[[-2.]*3,[2.]*3]), explo_noise=self.explo_noise)
+        
         self.modules['mod12'] = LearningModule("mod12", self.m_diva, self.c_dims + self.s_culbuto_1, self.conf, context_mode=dict(mode='mcs', context_dims=[0,1,2], context_n_dims=3, context_sensory_bounds=[[-2.]*3,[2.]*3]), explo_noise=self.explo_noise)
-        self.modules['mod13'] = LearningModule("mod13", self.m_diva, self.s_self_sound, self.conf, explo_noise=self.explo_noise)
-        self.modules['mod14'] = LearningModule("mod14", self.m_diva, self.s_caregiver_sound, self.conf, imitate=["mod6", "mod14"], explo_noise=self.explo_noise)
-         
+        #self.modules['mod13'] = LearningModule("mod13", self.m_diva, self.s_self_sound, self.conf, explo_noise=self.explo_noise)
+        self.modules['mod14'] = LearningModule("mod14", self.m_diva, self.s_self_sound, self.conf, imitate="mod6", explo_noise=self.explo_noise, proba_imitate=self.proba_imitate) 
 
         for mid in self.modules.keys():
             self.cp_evolution[mid] = []
@@ -196,8 +196,7 @@ class Supervisor(object):
     def produce(self, context):
         if self.t < self.n_motor_babbling:
             self.mid_control = None
-            self.chosen_modules.append(0)
-            self.goals.append(None)
+            self.chosen_modules.append("motor_babbling")
             return self.motor_babbling()
         else:
             mid = self.choose_babbling_module()
@@ -206,11 +205,9 @@ class Supervisor(object):
             mid_c = self.modules[mid].get_c(context) if self.modules[mid].context_mode else None
             
             if self.modules[mid].imitate is not None:
-                m = self.modules[mid].produce(context=mid_c, imitate_sm=[self.modules[m].sm.model.imodel.fmodel.dataset for m in self.modules[mid].imitate])
+                m = self.modules[mid].produce(context=mid_c, imitate_sm=self.modules[self.modules[mid].imitate].sm.model.imodel.fmodel.dataset)
             else:                
                 m = self.modules[mid].produce(context=mid_c)
-                
-            self.goals.append(np.array(self.modules[mid].x, dtype=np.float16))
                 
             if self.mid2motor_space(mid) == "arm":
                 self.last_cmd = "arm"

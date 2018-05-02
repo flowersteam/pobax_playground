@@ -12,7 +12,7 @@ from interest_model import MiscRandomInterest, ContextRandomInterest
 
 
 class LearningModule(Agent):
-    def __init__(self, mid, m_space, s_space, env_conf, explo_noise=0.1, imitate=None, context_mode=None):
+    def __init__(self, mid, m_space, s_space, env_conf, explo_noise=0.1, imitate=None, proba_imitate=0.5, context_mode=None):
 
         #print mid, m_space, s_space
         self.conf = make_configuration(env_conf.m_mins[m_space], 
@@ -27,16 +27,13 @@ class LearningModule(Agent):
         self.context_mode = context_mode
         self.s_space = s_space
         self.motor_babbling_n_iter = 0
+        self.proba_imitate = proba_imitate
         self.imitate = imitate
         
         self.s = None
         self.sp = None
         self.last_interest = 0
         self.goal_dict = {}
-        self.imitated_sounds = []
-        
-        # Only used for stats:
-        self.toynames = ['culbuto_1']
         
         if context_mode is not None:
             im_cls, kwargs = (ContextRandomInterest, {
@@ -110,39 +107,22 @@ class LearningModule(Agent):
         m, sp = self.sensorimotor_model.infer(expl_dims, inf_dims, x.flatten())
         return m, sp
     
-    def update_imitation_goals(self, imitate_sms, window_size=1000):
-        self.goal_dict = {}
-        for imitate_sm in imitate_sms:
-            n = len(imitate_sm)
-            goals = [imitate_sm.get_y(idx)[-10:] for idx in range(max(0, n - window_size), n)]
+    def update_imitation_goals(self, imitate_sm, time_window=100):
+        n = len(imitate_sm)
+        if n > 0:
+            goals = [imitate_sm.get_y(idx)[3:] for idx in range(max(0, n - time_window), n)] # [8:] depend on mod6 context_n_dims
             #print "imitate", goals
             for goal in goals:
-                if not self.goal_dict.has_key(goal.tostring()):
-                    self.goal_dict[goal.tostring()] = (goal, 1)
-                else:
-                    self.goal_dict[goal.tostring()] = (goal, self.goal_dict[goal.tostring()][1] + 1)
+                self.goal_dict[goal.tostring()] = goal
         
-    def imitate_goal(self, imitate_sm, mode="proportional"):
-        #print "*******Imitating"
+    def imitate_goal(self, imitate_sm, mode="uniform"):
         self.update_imitation_goals(imitate_sm)
-        if len(self.goal_dict) > 0:
+        if len(imitate_sm) > 0:
             if mode == "uniform":
-                goals = self.goal_dict.values()
-                goal = np.array(goals[np.random.choice(range(len(self.goal_dict)))][0])
+                goal = np.array(self.goal_dict.values()[np.random.choice(range(len(self.goal_dict)))])
                 return goal
             elif mode == "proportional":
-                goals = self.goal_dict.values()
-                psum = sum([float(g[1]) for g in goals])
-                goal = np.array(goals[np.random.choice(range(len(self.goal_dict)), p=[g[1]/psum for g in goals])][0])
-                #print "goals proba", [g[1]/psum for g in goals]
-                av = np.mean([float(g[1]) for g in goals])
-                print "toys occurences", 
-                for i in [0]:
-                    if self.goal_dict.has_key(self.toynames[i]):
-                        print float(self.goal_dict[self.toynames[i]][1]) / av,
-                print
-
-                return goal
+                return np.array(np.random.choice(self.goal_dict.values()))
         else:
             return np.zeros(len(self.expl_dims))
             
@@ -151,19 +131,13 @@ class LearningModule(Agent):
             self.m = self.motor_babbling()
             self.s = np.zeros(len(self.s_space))
             self.x = np.zeros(len(self.expl_dims))
-            #print self.mid, "babble", self.x, self.expl_dims, self.inf_dims
         else:
-            if imitate_sm is not None:
+            if imitate_sm is not None and np.random.random() < self.proba_imitate:
                 self.x = np.array(self.imitate_goal(imitate_sm))
-                self.imitated_sounds.append(self.x)
-                #print self.mid, "imitate", self.x, self.expl_dims, self.inf_dims
                 #print self.x
             else:
                 self.x = self.choose(context)
-                #print self.mid, "produce goal", self.x, self.expl_dims, self.inf_dims
-                self.imitated_sounds.append(None)
-            #print self.mid, "goal", self.x, self.expl_dims, self.inf_dims
-            self.y, self.sp = self.infer(self.expl_dims, self.inf_dims, self.x, explore= np.random.random() < 0.5)
+            self.y, self.sp = self.infer(self.expl_dims, self.inf_dims, self.x)
             
             self.m, self.s = self.extract_ms(self.x, self.y)
                    
