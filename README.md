@@ -17,6 +17,13 @@ sudo apt install libnlopt-dev libnlopt0 ros-kinetic-nlopt
 sudo apt install python-pip ros-kinetic-moveit
 sudo pip install xmltodict
 
+# These packages are required by the pobax_playground
+sudo pip install pypot
+sudo pip install oct2py
+sudo pip install pyaudio
+# NB: building wheel fails for pyaudio ? try sudo apt install libasound-dev portaudio19-dev libportaudio2 libportaudiocpp0 ffmpeg libav-tools
+
+
 # Setup baxter workstation (see http://sdk.rethinkrobotics.com/wiki/Workstation_Setup for details):
 wstool init .
 wstool merge https://raw.githubusercontent.com/RethinkRobotics/baxter/master/baxter_sdk.rosinstall
@@ -28,18 +35,32 @@ chmod u+x baxter.sh
 
 cd ~/catkin_ws
 catkin_make
+
+`thr_infrastructure` (Third hand robot infrastructure) is the Baxter part inherited from the Third Hand Project.
+Checkout [more details about `thr_infrastructure` online](https://github.com/flowersteam/thr_infrastructure#third-hand-robot-infrastructure).
 ```
 
 ## Start
 ```
+Make sure baxter and the optitrack laptop are both launched and detected (use ping cmd to check)
+
+1. Calibrate optitrack using the calibration notebook in optitrack_publisher
+2. Use thr_infrastructure/thr_scenes notebook "update_scene_assistant" 
+to setup baxter's instructions on how to grab and replace the culbuto.
+NB: you can also directly edit thr_infrastructure/thr_scenes/config/pobax/poses.json
+
+# You can now test manually if baxter is able to grasp and replace the culbuto
 cd ~/catkin_ws
 ./baxter.sh   # edited its variables first (baxter_hostname, your_hostname and ros_version)
 roslaunch thr_interaction_controller manual.launch scene:=pobax display:=action
+# A promt should appear in the terminal, from which you can send the following commands to baxter:
+r (reset right arm to starting position)
+g1 (grasp culbuto)
+p1 (place culbuto)
+
+If everything worked so far you should be able to launch the pobax_playground experiment:
+
 ```
-
-`thr_infrastructure` (Third hand robot infrastructure) is the Baxter part inherited from the Third Hand Project.
-Checkout [more details about `thr_infrastructure` online](https://github.com/flowersteam/thr_infrastructure#third-hand-robot-infrastructure).
-
 ## Troubleshooting
 ### Object grasping misses precision
 Please recalibrate Optitrack using the wanding bar in Motive *and* [the Baxter-Optitrack calibration](https://github.com/baxter-flowers/optitrack_publisher#calibrate).
