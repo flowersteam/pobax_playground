@@ -14,8 +14,17 @@ git clone https://github.com/flowersteam/baxter_commander.git
 git clone https://github.com/flowersteam/trac_ik_baxter.git
 git clone https://github.com/flowersteam/trac_ik.git
 sudo apt install libnlopt-dev libnlopt0 ros-kinetic-nlopt
-sudo apt install python-pip ros-kinetic-moveit  # Moveit has deps for Baxter Commander
+sudo apt install python-pip ros-kinetic-moveit
 sudo pip install xmltodict
+
+# Setup baxter workstation (see http://sdk.rethinkrobotics.com/wiki/Workstation_Setup for details):
+wstool init .
+wstool merge https://raw.githubusercontent.com/RethinkRobotics/baxter/master/baxter_sdk.rosinstall
+wstool update
+# Download baxter setup script:
+cd ~/catkin_ws
+wget https://github.com/RethinkRobotics/baxter/raw/master/baxter.sh
+chmod u+x baxter.sh
 
 cd ~/catkin_ws
 catkin_make
@@ -24,7 +33,7 @@ catkin_make
 ## Start
 ```
 cd ~/catkin_ws
-./baxter.sh   # Make sure you have copied it and edited its variables first. See Baxter workstation setup
+./baxter.sh   # edited its variables first (baxter_hostname, your_hostname and ros_version)
 roslaunch thr_interaction_controller manual.launch scene:=pobax display:=action
 ```
 
