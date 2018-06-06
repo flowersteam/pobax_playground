@@ -2,6 +2,7 @@
 ## Install package and dependencies
 
 1. Setup [ROS and Baxter SDK](http://sdk.rethinkrobotics.com/wiki/Workstation_Setup)
+```
 wstool init .
 wstool merge https://raw.githubusercontent.com/RethinkRobotics/baxter/master/baxter_sdk.rosinstall
 wstool update
@@ -9,6 +10,7 @@ wstool update
 cd ~/catkin_ws
 wget https://github.com/RethinkRobotics/baxter/raw/master/baxter.sh
 chmod u+x baxter.sh
+```
 
 2. Clone the dependencies and compile:
 ```
@@ -24,33 +26,37 @@ git clone https://github.com/flowersteam/trac_ik.git
 sudo apt install libnlopt-dev libnlopt0 ros-kinetic-nlopt
 sudo apt install python-pip ros-kinetic-moveit
 sudo pip install xmltodict
+# Don't forget to also add the pobax_playground repository 
 
-# These packages are required by the pobax_playground
+cd ~/catkin_ws
+catkin_make
+```
+3. Install dependencies specific to the pobax playground 
+```
 sudo pip install pypot
 sudo pip install poppy-torso
 sudo apt-get install octave
 sudo pip install oct2py
 sudo pip install pyaudio
-# NB: building wheel fails for pyaudio ? try sudo apt install libasound-dev portaudio19-dev libportaudio2 libportaudiocpp0 ffmpeg libav-tools
+
+# Building wheel fails for pyaudio ? Try this:
+sudo apt install libasound-dev portaudio19-dev libportaudio2 libportaudiocpp0 ffmpeg libav-tools
 
 # Download [the latest Diva](http://sites.bu.edu/guentherlab/software/diva-source-code/) (vocal tract simulator): 
 # Unzip the archive's files to ~/software/DIVAsimulink (or update voice.py and change the default directory)
-
-cd ~/catkin_ws
-catkin_make
+```
 
 `thr_infrastructure` (Third hand robot infrastructure) is the Baxter part inherited from the Third Hand Project.
 Checkout [more details about `thr_infrastructure` online](https://github.com/flowersteam/thr_infrastructure#third-hand-robot-infrastructure).
-```
+
 
 ## Start
 ```
-Make sure baxter and the optitrack laptop are both launched and detected (use ping cmd to check)
+Make sure baxter and the optitrack pc are both launched and detected (use ping cmd to check)
 Sync your clock with baxter: ntpdate -q ntp.ubuntu.com
 
-1. Calibrate optitrack using the calibration notebook in optitrack_publisher
-2. Use thr_infrastructure/thr_scenes notebook "update_scene_assistant" 
-to setup baxter's instructions on how to grab and replace the culbuto.
+1. Calibrate optitrack and baxter using the calibration notebook in [optitrack_publisher](https://github.com/flowersteam/optitrack_publisher#calibrate)
+2. Use [the update_scene_assistant notebook](https://github.com/flowersteam/thr_infrastructure/tree/master/thr_scenes/config/pobax) to setup baxter's instructions on how to grab and replace the culbuto.
 NB: you can also directly edit thr_infrastructure/thr_scenes/config/pobax/poses.json
 
 # You can now test manually if baxter is able to grasp and replace the culbuto
@@ -67,7 +73,7 @@ roslaunch pobax_playground start.launch name:=demo iterations:=20000
 ```
 ## Troubleshooting
 ### Object grasping misses precision
-Please recalibrate Optitrack using the wanding bar in Motive *and* [the Baxter-Optitrack calibration](https://github.com/baxter-flowers/optitrack_publisher#calibrate).
+Please recalibrate Optitrack using the wanding bar in Motive *and* [the Baxter-Optitrack calibration](https://github.com/flowersteam/optitrack_publisher#calibrate).
 
 ### Could not load the xml from parameter server: /robot_description
 have you executed `./baxter.sh`? it looks like you're using a local ROS Master instead of Baxter's one.
