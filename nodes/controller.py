@@ -252,7 +252,7 @@ class Controller(object):
             rospy.sleep(0.1)
             cur_x, cur_y, cur_z = self.get_culb_coord(self.perception.get())
             nb_iter += 1
-            if (abs(cur_x-old_x) + abs(cur_y-old_y) + abs(cur_y-old_y)) < 0.001:
+            if (abs(cur_x-old_x) + abs(cur_y-old_y) + abs(cur_y-old_y)) < 0.0005:
                 rospy.loginfo('Finished waiting, culbuto is motionless!')
                 return nb_iter
             old_x,old_y,old_z = cur_x,cur_y,cur_z
