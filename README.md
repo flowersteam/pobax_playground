@@ -1,7 +1,15 @@
 # POBAX Playground
 ## Install package and dependencies
 
-1. Setup [ROS and Baxter SDK](http://sdk.rethinkrobotics.com/wiki/Workstation_Setup) (we're assuming you're on ROS Kinetic)
+1. Setup [ROS and Baxter SDK](http://sdk.rethinkrobotics.com/wiki/Workstation_Setup)
+wstool init .
+wstool merge https://raw.githubusercontent.com/RethinkRobotics/baxter/master/baxter_sdk.rosinstall
+wstool update
+# Download baxter setup script:
+cd ~/catkin_ws
+wget https://github.com/RethinkRobotics/baxter/raw/master/baxter.sh
+chmod u+x baxter.sh
+
 2. Clone the dependencies and compile:
 ```
 cd ~/catkin_ws/src  # Or ros_ws if you created such workspace
@@ -25,18 +33,8 @@ sudo pip install oct2py
 sudo pip install pyaudio
 # NB: building wheel fails for pyaudio ? try sudo apt install libasound-dev portaudio19-dev libportaudio2 libportaudiocpp0 ffmpeg libav-tools
 
-# Download the latest Diva (vocal tract simulator): http://sites.bu.edu/guentherlab/software/diva-source-code/
+# Download [the latest Diva](http://sites.bu.edu/guentherlab/software/diva-source-code/) (vocal tract simulator): 
 # Unzip the archive's files to ~/software/DIVAsimulink (or update voice.py and change the default directory)
-
-
-# Setup baxter workstation (see http://sdk.rethinkrobotics.com/wiki/Workstation_Setup for details):
-wstool init .
-wstool merge https://raw.githubusercontent.com/RethinkRobotics/baxter/master/baxter_sdk.rosinstall
-wstool update
-# Download baxter setup script:
-cd ~/catkin_ws
-wget https://github.com/RethinkRobotics/baxter/raw/master/baxter.sh
-chmod u+x baxter.sh
 
 cd ~/catkin_ws
 catkin_make
@@ -76,4 +74,4 @@ have you executed `./baxter.sh`? it looks like you're using a local ROS Master i
 
 ### Cannot open dev/ttyacm0: permission denied
 Quick solution: sudo chmod 666 /dev/ttyACM0
-https://stackoverflow.com/questions/27858041/oserror-errno-13-permission-denied-dev-ttyacm0-using-pyserial-from-pyth
+see [this stackoverflow post](https://stackoverflow.com/questions/27858041/oserror-errno-13-permission-denied-dev-ttyacm0-using-pyserial-from-pyth) for more details and a permanent solution.
