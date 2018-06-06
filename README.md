@@ -19,9 +19,14 @@ sudo pip install xmltodict
 
 # These packages are required by the pobax_playground
 sudo pip install pypot
+sudo pip install poppy-torso
+sudo apt-get install octave
 sudo pip install oct2py
 sudo pip install pyaudio
 # NB: building wheel fails for pyaudio ? try sudo apt install libasound-dev portaudio19-dev libportaudio2 libportaudiocpp0 ffmpeg libav-tools
+
+# Download the latest Diva (vocal tract simulator): http://sites.bu.edu/guentherlab/software/diva-source-code/
+# Unzip the archive's files to ~/software/DIVAsimulink (or update voice.py and change the default directory)
 
 
 # Setup baxter workstation (see http://sdk.rethinkrobotics.com/wiki/Workstation_Setup for details):
@@ -43,6 +48,7 @@ Checkout [more details about `thr_infrastructure` online](https://github.com/flo
 ## Start
 ```
 Make sure baxter and the optitrack laptop are both launched and detected (use ping cmd to check)
+Sync your clock with baxter: ntpdate -q ntp.ubuntu.com
 
 1. Calibrate optitrack using the calibration notebook in optitrack_publisher
 2. Use thr_infrastructure/thr_scenes notebook "update_scene_assistant" 
@@ -59,7 +65,7 @@ g1 (grasp culbuto)
 p1 (place culbuto)
 
 If everything worked so far you should be able to launch the pobax_playground experiment:
-
+roslaunch pobax_playground start.launch name:=demo iterations:=20000
 ```
 ## Troubleshooting
 ### Object grasping misses precision
@@ -67,3 +73,7 @@ Please recalibrate Optitrack using the wanding bar in Motive *and* [the Baxter-O
 
 ### Could not load the xml from parameter server: /robot_description
 have you executed `./baxter.sh`? it looks like you're using a local ROS Master instead of Baxter's one.
+
+### Cannot open dev/ttyacm0: permission denied
+Quick solution: sudo chmod 666 /dev/ttyACM0
+https://stackoverflow.com/questions/27858041/oserror-errno-13-permission-denied-dev-ttyacm0-using-pyserial-from-pyth
