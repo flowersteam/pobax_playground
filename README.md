@@ -41,34 +41,32 @@ sudo pip install pyaudio
 
 # Building wheel fails for pyaudio ? Try this:
 sudo apt install libasound-dev portaudio19-dev libportaudio2 libportaudiocpp0 ffmpeg libav-tools
-
-# Download [the latest Diva](http://sites.bu.edu/guentherlab/software/diva-source-code/) (vocal tract simulator): 
-# Unzip the archive's files to ~/software/DIVAsimulink (or update voice.py and change the default directory)
 ```
+4. Download [the latest Diva](http://sites.bu.edu/guentherlab/software/diva-source-code/) and unzip files in ~/software/DIVAsimulink (or change default directory in voice.py)
 
 `thr_infrastructure` (Third hand robot infrastructure) is the Baxter part inherited from the Third Hand Project.
 Checkout [more details about `thr_infrastructure` online](https://github.com/flowersteam/thr_infrastructure#third-hand-robot-infrastructure).
 
 
 ## Start
+
+1. Make sure baxter and the optitrack pc are both launched and detected (use ping cmd to check)
+2. Sync your clock with baxter: ntpdate -q ntp.ubuntu.com
+3. Calibrate optitrack and baxter using the calibration notebook in [optitrack_publisher](https://github.com/flowersteam/optitrack_publisher#calibrate)
+4. Use [the update_scene_assistant notebook](https://github.com/flowersteam/thr_infrastructure/tree/master/thr_scenes/config/pobax) to setup baxter's grasp and place poses. You can also directly edit thr_infrastructure/thr_scenes/config/pobax/poses.json.
+5. You can now test manually if baxter is able to grasp and replace the culbuto
 ```
-Make sure baxter and the optitrack pc are both launched and detected (use ping cmd to check)
-Sync your clock with baxter: ntpdate -q ntp.ubuntu.com
-
-1. Calibrate optitrack and baxter using the calibration notebook in [optitrack_publisher](https://github.com/flowersteam/optitrack_publisher#calibrate)
-2. Use [the update_scene_assistant notebook](https://github.com/flowersteam/thr_infrastructure/tree/master/thr_scenes/config/pobax) to setup baxter's instructions on how to grab and replace the culbuto.
-NB: you can also directly edit thr_infrastructure/thr_scenes/config/pobax/poses.json
-
-# You can now test manually if baxter is able to grasp and replace the culbuto
 cd ~/catkin_ws
-./baxter.sh   # edited its variables first (baxter_hostname, your_hostname and ros_version)
+./baxter.sh   # make sure you edited its variables first (baxter_hostname, your_hostname and ros_version)
 roslaunch thr_interaction_controller manual.launch scene:=pobax display:=action
 # A promt should appear in the terminal, from which you can send the following commands to baxter:
 r (reset right arm to starting position)
 g1 (grasp culbuto)
 p1 (place culbuto)
+```
 
-If everything worked so far you should be able to launch the pobax_playground experiment:
+6. If everything worked so far you should be able to launch the pobax_playground experiment:
+```
 roslaunch pobax_playground start.launch name:=demo iterations:=20000
 ```
 ## Troubleshooting
