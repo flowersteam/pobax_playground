@@ -77,5 +77,5 @@ Please recalibrate Optitrack using the wanding bar in Motive *and* [the Baxter-O
 have you executed `./baxter.sh`? it looks like you're using a local ROS Master instead of Baxter's one.
 
 ### Cannot open dev/ttyacm0: permission denied
-Quick solution: sudo chmod 666 /dev/ttyACM0
-see [this stackoverflow post](https://stackoverflow.com/questions/27858041/oserror-errno-13-permission-denied-dev-ttyacm0-using-pyserial-from-pyth) for more details and a permanent solution.
+Quick solution: sudo chmod 666 /dev/ttyACM0  
+See [this stackoverflow post](https://stackoverflow.com/questions/27858041/oserror-errno-13-permission-denied-dev-ttyacm0-using-pyserial-from-pyth) for more details and a permanent solution.
