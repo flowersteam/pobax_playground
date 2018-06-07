@@ -3,6 +3,7 @@ from geometry_msgs.msg import PoseStamped
 from sensor_msgs.msg import JointState, Joy
 import rospy
 import tf
+from tf.transformations import euler_from_quaternion
 
 
 
@@ -47,7 +48,7 @@ class TopicAggregator(object):
     @property
     def culbuto_1(self):
         try:
-            position,_ = self.listener.lookupTransform('/optitrack_frame','/culbuto/1', rospy.Time(0))
+            position, orientation = self.listener.lookupTransform('/optitrack_frame','/culbuto/1', rospy.Time(0))
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
             rospy.logwarn("ERROR TF TRANSFORM IN AGGREGATOR")
         pose = PoseStamped()
@@ -57,4 +58,10 @@ class TopicAggregator(object):
         pose.pose.position.x = position[0]
         pose.pose.position.y = position[1]
         pose.pose.position.z = position[2]
+
+        pose.pose.orientation.x = orientation[0]
+        pose.pose.orientation.y = orientation[1]
+        pose.pose.orientation.z = orientation[2]
+        pose.pose.orientation.w = orientation[3]
+
         return pose

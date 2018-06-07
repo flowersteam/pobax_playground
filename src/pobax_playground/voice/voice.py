@@ -193,8 +193,8 @@ class Voice(object):
 
         if not sound_id == None: # A word was choosen by caregiver
             rospy.loginfo('Voice Node: Baxter says %s' % sound_id)
-            if self.audio: # Play the word
-                self.diva.compute_sensory_effect(self.full_human_motor_traj[sound_id],sound_power=30.)
+            #if self.audio: # Play the word
+            #    self.diva.compute_sensory_effect(self.full_human_motor_traj[sound_id],sound_power=30.)
         return self.caregiver_sound
 
     # Generate and play sound from diva trajectory

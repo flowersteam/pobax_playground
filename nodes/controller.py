@@ -17,6 +17,7 @@ import actionlib
 import pickle
 import pyaudio  
 import wave
+from tf.transformations import euler_from_quaternion
 
 class Perception_controller(object):
     def __init__(self):
@@ -210,6 +211,9 @@ class Controller(object):
         # Sound setting
         self.audio_help = AudioHelp()
 
+        # Quick and DIRTY TODO use params
+        self.culb_orientation_delta = 0.20 
+
 
         rospy.loginfo('Controller fully started!')
 
@@ -239,9 +243,13 @@ class Controller(object):
         return bk_dict
 
     # Extracts culbuto's x,y,z coordinates from PoseStamped msg
-    def get_culb_coord(self, msg):
+    def get_culb_coord(self, msg, orientation=False):
         coords = msg.state.culbuto_1.pose.position
-        return coords.x, coords.y, coords.z
+        quaternion = msg.state.culbuto_1.pose.orientation
+        if orientation:
+        	return coords.x, coords.y, coords.z, quaternion
+        else:
+        	return coords.x, coords.y, coords.z
 
     # Loops while culbuto is still moving and returns the number of waiting loops
     def wait_motionless_culbuto(self):
@@ -284,10 +292,18 @@ class Controller(object):
             return False
 
     # Checks wether culbuto is still in the playground, ask user to put it back otw
-    def ensure_culbuto_safe_pos(self, culb_coord):
+    def ensure_culbuto_safe_pos(self, culb_pose):
+    	culb_coord = culb_pose[0:3]
+    	culb_orientation = (culb_pose[3].x, culb_pose[3].y, culb_pose[3].z, culb_pose[3].w)
         if culb_coord[1] > self.params['culbuto_height_limit']:
             self.audio_help.play('away')
             raw_input("Culbuto out of playground, please set it back and press enter")
+        
+        euler_o = np.abs(euler_from_quaternion(culb_orientation))
+        if (euler_o[0] > self.culb_orientation_delta) or (euler_o[2] > self.culb_orientation_delta):
+           self.audio_help.play('away')
+           raw_input("Culbuto out of playground, please set it back and press enter")
+
 
     def run(self):
         rospy.loginfo("controller node up and running")
@@ -314,7 +330,7 @@ class Controller(object):
                 s_response_physical = None
                 s_response_torso_sound = None
                 s_response_baxter_sound = None
-                self.ensure_culbuto_safe_pos(self.get_culb_coord(self.perception.get()))
+                self.ensure_culbuto_safe_pos(self.get_culb_coord(self.perception.get(),orientation=True))
                 self.wait_motionless_culbuto()
                 traj_msg = self.learning.produce()
                 s_context = self.get_culb_coord(self.perception.get())
@@ -354,7 +370,7 @@ class Controller(object):
 
                 self.learning.perceive(s_context, s_response_physical, s_response_torso_sound, s_response_baxter_sound)
 
-                self.ensure_culbuto_safe_pos(self.get_culb_coord(self.perception.get()))
+                self.ensure_culbuto_safe_pos(self.get_culb_coord(self.perception.get(),orientation=True))
                 # Reset culbuto periodically
                 if self.iteration % self.params['reset_every'] == 0:
                     if self.is_culbuto_too_far():
@@ -363,7 +379,7 @@ class Controller(object):
                         self.baxter.replace()
                         self.baxter.reset(blocking=False)
                         self.torso.reset(True)
-                self.ensure_culbuto_safe_pos(self.get_culb_coord(self.perception.get()))
+                self.ensure_culbuto_safe_pos(self.get_culb_coord(self.perception.get(),orientation=True))
                 if self.iteration % self.params['save_every'] == 0:
                     self.learning.save()
                     self.save_bk(b_k)
