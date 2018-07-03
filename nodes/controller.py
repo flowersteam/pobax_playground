@@ -212,7 +212,7 @@ class Controller(object):
         self.audio_help = AudioHelp()
 
         # Quick and DIRTY TODO use params
-        self.culb_orientation_delta = 0.20 
+        self.culb_orientation_delta = 0.50
 
 
         rospy.loginfo('Controller fully started!')
@@ -299,10 +299,12 @@ class Controller(object):
             self.audio_help.play('away')
             raw_input("Culbuto out of playground, please set it back and press enter")
         
+        print euler_from_quaternion(culb_orientation)
         euler_o = np.abs(euler_from_quaternion(culb_orientation))
-        if (euler_o[0] > self.culb_orientation_delta) or (euler_o[2] > self.culb_orientation_delta):
-           self.audio_help.play('away')
-           raw_input("Culbuto out of playground, please set it back and press enter")
+        #if ((euler_o[0] > self.culb_orientation_delta) or (euler_o[2] > self.culb_orientation_delta))\
+        #	and ((euler_o[0] < (2.85-self.culb_orientation_delta) or euler_o[2] < (2.85-self.culb_orientation_delta))):
+        #   self.audio_help.play('away')
+        #   raw_input("Culbuto out of playground, please set it back and press enter")
 
 
     def run(self):
@@ -370,6 +372,7 @@ class Controller(object):
 
                 self.learning.perceive(s_context, s_response_physical, s_response_torso_sound, s_response_baxter_sound)
 
+                self.wait_motionless_culbuto()
                 self.ensure_culbuto_safe_pos(self.get_culb_coord(self.perception.get(),orientation=True))
                 # Reset culbuto periodically
                 if self.iteration % self.params['reset_every'] == 0:
@@ -379,6 +382,7 @@ class Controller(object):
                         self.baxter.replace()
                         self.baxter.reset(blocking=False)
                         self.torso.reset(True)
+                self.wait_motionless_culbuto()
                 self.ensure_culbuto_safe_pos(self.get_culb_coord(self.perception.get(),orientation=True))
                 if self.iteration % self.params['save_every'] == 0:
                     self.learning.save()

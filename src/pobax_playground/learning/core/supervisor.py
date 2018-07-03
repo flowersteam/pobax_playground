@@ -49,7 +49,7 @@ class Supervisor(object):
 
         self.arm_modules = ['mod1','mod3','mod6']
         self.diva_modules = ['mod12','mod14']
-        self.arm_goal_selection = 0.20
+        self.arm_goal_selection = 0.10
         
         # Create the learning modules:
         self.modules['mod1'] = LearningModule("mod1", self.m_arm, self.s_hand, self.conf, explo_noise=self.explo_noise)
@@ -85,11 +85,11 @@ class Supervisor(object):
         return {
                 "sm_data":sm_data,
                 #"im_data":im_data,
-                #"goals":self.goals,
+                "goals":self.goals,
                 "chosen_modules":self.chosen_modules,
                 #"cp_evolution":self.cp_evolution,
                 #"pp_evolution":self.pp_evolution,
-                #"imitated_sounds":self.modules['mod14'].imitated_sounds}
+                #"imitated_sounds":self.modules['mod14'].imitated_sounds
                 }
 
     def forward(self, data, iteration):
@@ -217,6 +217,8 @@ class Supervisor(object):
                 self.last_cmd = "diva"
                 self.m = [0.]*self.arm_n_dims + list(m)
                 self.count_diva += 1
+            if mid is not None:
+                self.goals.append(self.modules[mid].x)
             return self.m, self.last_cmd
     
     def perceive(self, s):

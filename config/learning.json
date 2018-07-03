@@ -1,5 +1,5 @@
 {
-  "n_motor_babbling": 1000,
+  "n_motor_babbling": 1500,
   "explo_noise": 0.1,
   "choice_eps": 0.2,
   "publish_rate": 4,

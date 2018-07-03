@@ -10,6 +10,7 @@ from explauto.utils.utils import rand_bounds
 import pickle
 from rospkg.rospack import RosPack
 import rospy  
+import urllib2
 
 class Voice(object):
     def __init__(self, tau, pa, pc, gui=False, audio=False):
@@ -26,26 +27,21 @@ class Voice(object):
         self.v_e = list(np.log2([400, 2200]))
         self.v_i = list(np.log2([300, 2300]))
 
-        '''
+        
         # Retrieve caregiver sounds and trajectories from json
         self.rospack = RosPack()
         with open(join(self.rospack.get_path('pobax_playground'), 'config', 'human_sounds.pickle')) as f:
             self.full_human_motor_traj, self.full_human_sounds_traj  = pickle.load(f)
         self.human_sounds = self.full_human_sounds_traj.keys()
         rospy.loginfo('Voice node using the word %s for culbuto name' % self.human_sounds[0])
-        '''
-
-
-
-
         
         self.vowels = dict(o=self.v_o, y=self.v_y, u=self.v_u, e=self.v_e, i=self.v_i)
         
-        self.human_sounds = ['eyu', 'oey', 'eou', 'yeo']
+        self.human_sounds = ['eyu', 'oey', 'eou', 'oyi']
         #random.shuffle(self.human_sounds)
         print "human sounds", self.human_sounds
 
-        '''
+        
         def compress_sound_traj(sound):
             assert(len(sound) == 100)
             f1s = sound[:50]
@@ -82,7 +78,7 @@ class Voice(object):
             self.best_vocal_errors[hs] = 10.
             self.human_sounds_traj[hs] = compute_s_sound(hs)
             self.human_sounds_traj_std[hs] = [d - 8.5 for d in self.human_sounds_traj[hs][:5]] + [d - 10.25 for d in self.human_sounds_traj[hs][5:]]    
-    
+        '''
 
         
         self.diva_traj = None
@@ -193,8 +189,10 @@ class Voice(object):
 
         if not sound_id == None: # A word was choosen by caregiver
             rospy.loginfo('Voice Node: Baxter says %s' % sound_id)
-            #if self.audio: # Play the word
-            #    self.diva.compute_sensory_effect(self.full_human_motor_traj[sound_id],sound_power=30.)
+            if self.audio: # Play the word
+                url= "http://193.50.110.54:8080/api/v1/"+sound_id
+                contents = urllib2.urlopen(url).read()
+                #self.diva.compute_sensory_effect(self.full_human_motor_traj[sound_id],sound_power=30.)
         return self.caregiver_sound
 
     # Generate and play sound from diva trajectory
