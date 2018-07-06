@@ -3,5 +3,5 @@
 	"pa": null,
 	"pc": true,
 	"gui": false,
-	"audio":true
+	"audio":false
 }

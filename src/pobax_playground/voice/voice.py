@@ -178,7 +178,7 @@ class Voice(object):
         sound_id = None
         if caregiver_answer == "contingent":
             if is_culbuto_touched:
-                print "CULBUTO WAS TOUCHED HIP HIP HIP HOURRRAY"
+                rospy.logwarn("CULBUTO WAS TOUCHED HIP HIP HIP HOURRRAY")
                 sound_id, self.caregiver_sound = self.give_label("culbuto_1")
 
         elif caregiver_answer == "distractor":
@@ -188,7 +188,7 @@ class Voice(object):
             self.caregiver_sound = None
 
         if not sound_id == None: # A word was choosen by caregiver
-            rospy.loginfo('Voice Node: Baxter says %s' % sound_id)
+            rospy.logwarn('Voice Node: Baxter says %s' % sound_id)
             if self.audio: # Play the word
                 url= "http://193.50.110.54:8080/api/v1/"+sound_id
                 contents = urllib2.urlopen(url).read()
@@ -212,37 +212,17 @@ class Voice(object):
             # parent gives object if label is produced and object out of reach
             if self.produced_sound == self.human_sounds[0]:
                 is_culbuto_name = True
-                print "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!CULBUTO NAME WAS PRONOUNCED"
+                rospy.logwarn("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!CULBUTO NAME WAS PRONOUNCED")
 
         self.self_sound = [f for formants in self.raw_produced_sound[[0, 12, 24, 37, 49]] for f in formants]
         self.self_sound = self.self_sound[0::2] + self.self_sound[1::2]
-            
-        '''
-        # CAREGIVER VOCAL REACTION
-        caregiver_answer = self.get_caregiver_answer(is_culbuto_name)
-        if caregiver_answer == "contingent":
-            if is_culbuto_name:
-                sound_id, self.caregiver_sound = self.give_label("culbuto_1")
-                rospy.loginfo('Voice Node: Baxter says %s' % sound_id)
-
-
-        elif caregiver_answer == "distractor":
-            sound_id, self.caregiver_sound = self.give_label("distractor")
-            rospy.loginfo('Voice Node: Baxter says %s' % sound_id)
-        else:
-            # No sound
-            self.caregiver_sound = None
-            events["caregiver_no_voc"] = True
-
-        if self.caregiver_sound and self.audio:
-            self.diva.compute_sensory_effect(self.full_human_motor_traj[sound_id],sound_power=30.)
-        '''
         # MAP TO STD INTERVAL (only extracts first 2 formants)
         self.downsampled_self_sound = [d - 8.5 for d in self.self_sound[:5]] + [d - 10.25 for d in self.self_sound[5:]]
         #self.downsampled_caregiver_sound = [d - 8.5 for d in self.caregiver_sound[:5]] + [d - 10.25 for d in self.caregiver_sound[5:]]
 
         #return bounds_min_max(s, self.conf.s_mins, self.conf.s_maxs)
-        return self.downsampled_self_sound, None, is_culbuto_name, self.produced_sound
+        flat_raw_produced_sound =  [f for formants in self.raw_produced_sound for f in formants]
+        return self.downsampled_self_sound, None, is_culbuto_name, self.produced_sound, flat_raw_produced_sound
         
         # MAP TO STD INTERVAL
         #self_sound = [d - 8.5 for d in self.self_sound[:5]] + [d - 10.25 for d in self.self_sound[5:]]

@@ -4,3 +4,5 @@ pobax_playground/SoundTrajectory torso_sound_trajectory
 pobax_playground/SoundTrajectory baxter_sound_trajectory
 bool is_culbuto_name
 string produced_name
+pobax_playground/SoundTrajectory raw_torso_sound
+

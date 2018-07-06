@@ -18,6 +18,7 @@ import pickle
 import pyaudio  
 import wave
 from tf.transformations import euler_from_quaternion
+import time
 
 class Perception_controller(object):
     def __init__(self):
@@ -136,7 +137,6 @@ class Baxter_controller(object):
                 self.audio_help.play('reset')
                 raw_input("Baxter could not reset, please help him and press enter")
 
-
 class Learning_controller(object):
 
     def __init__(self):
@@ -179,7 +179,8 @@ class Voice_controller(object):
     def execute_analyse(self, trajectory_msg):
         request = ExecuteAnalyseVocalTrajectoryRequest(vocal_trajectory=trajectory_msg)
         response = self.services['exec_analyse']['call'](request)
-        return response.torso_sound_trajectory, response.baxter_sound_trajectory, response.is_culbuto_name, response.produced_name
+        return response.torso_sound_trajectory, response.baxter_sound_trajectory,response.is_culbuto_name,\
+               response.produced_name, response.raw_torso_sound
 
     def baxter_analyse(self, is_culbuto_touched):
         request = BaxterAnalyseVocalTrajectoryRequest(is_culbuto_touched=is_culbuto_touched)
@@ -206,7 +207,7 @@ class Controller(object):
         self.dir = join(self.rospack.get_path('pobax_playground'), 'logs')
         if not os.path.isdir(self.dir):
             os.makedirs(self.dir)
-        self.experiment_bk_file = join(self.dir, self.experiment_name + 'book_keeping.pickle')
+        self.experiment_bk_file = join(self.dir, self.experiment_name + '_book_keeping.pickle')
 
         # Sound setting
         self.audio_help = AudioHelp()
@@ -247,9 +248,9 @@ class Controller(object):
         coords = msg.state.culbuto_1.pose.position
         quaternion = msg.state.culbuto_1.pose.orientation
         if orientation:
-        	return coords.x, coords.y, coords.z, quaternion
+            return coords.x, coords.y, coords.z, quaternion
         else:
-        	return coords.x, coords.y, coords.z
+            return coords.x, coords.y, coords.z
 
     # Loops while culbuto is still moving and returns the number of waiting loops
     def wait_motionless_culbuto(self):
@@ -278,7 +279,7 @@ class Controller(object):
 
     # Returns True if culbuto has been touched during torso's movement, False otw
     def is_culbuto_touched(self,s_response_physical):
-        thr = 1e-07 #variance threshold
+        thr = 9e-06 #variance threshold
         xs = []
         ys = []
         zs = []
@@ -286,23 +287,24 @@ class Controller(object):
             xs.append(round(point.culbuto_1.pose.position.x,4))
             ys.append(round(point.culbuto_1.pose.position.y,4))
             zs.append(round(point.culbuto_1.pose.position.z,4))
-        if (np.var(xs) > thr) or (np.var(xs) > thr) or (np.var(xs) > thr):
+        #rospy.logwarn("X:{},Y:{},Z:{}".format(np.var(xs), np.var(ys), np.var(zs)))
+        if (np.var(xs) > thr) or (np.var(ys) > thr) or (np.var(zs) > thr):
             return True
         else:
             return False
 
     # Checks wether culbuto is still in the playground, ask user to put it back otw
     def ensure_culbuto_safe_pos(self, culb_pose):
-    	culb_coord = culb_pose[0:3]
-    	culb_orientation = (culb_pose[3].x, culb_pose[3].y, culb_pose[3].z, culb_pose[3].w)
+        culb_coord = culb_pose[0:3]
+        culb_orientation = (culb_pose[3].x, culb_pose[3].y, culb_pose[3].z, culb_pose[3].w)
         if culb_coord[1] > self.params['culbuto_height_limit']:
             self.audio_help.play('away')
             raw_input("Culbuto out of playground, please set it back and press enter")
-        
-        print euler_from_quaternion(culb_orientation)
-        euler_o = np.abs(euler_from_quaternion(culb_orientation))
+        # not working, not precise enough
+        #print euler_from_quaternion(culb_orientation)
+        #euler_o = np.abs(euler_from_quaternion(culb_orientation))
         #if ((euler_o[0] > self.culb_orientation_delta) or (euler_o[2] > self.culb_orientation_delta))\
-        #	and ((euler_o[0] < (2.85-self.culb_orientation_delta) or euler_o[2] < (2.85-self.culb_orientation_delta))):
+        #   and ((euler_o[0] < (2.85-self.culb_orientation_delta) or euler_o[2] < (2.85-self.culb_orientation_delta))):
         #   self.audio_help.play('away')
         #   raw_input("Culbuto out of playground, please set it back and press enter")
 
@@ -322,6 +324,8 @@ class Controller(object):
             b_k['nb_motor_it'] = 0
             b_k['nb_sound_it'] = 0
             b_k['produced_names'] = dict()
+            b_k['raw_torso_sounds'] = []
+
         try:
             while not rospy.is_shutdown() and self.iteration < nb_iterations:
                 self.iteration += 1
@@ -332,17 +336,20 @@ class Controller(object):
                 s_response_physical = None
                 s_response_torso_sound = None
                 s_response_baxter_sound = None
-                self.ensure_culbuto_safe_pos(self.get_culb_coord(self.perception.get(),orientation=True))
-                self.wait_motionless_culbuto()
+                #self.ensure_culbuto_safe_pos(self.get_culb_coord(self.perception.get(),orientation=True))
+                #self.wait_motionless_culbuto()
                 traj_msg = self.learning.produce()
                 s_context = self.get_culb_coord(self.perception.get())
                 if traj_msg.trajectory_type == "diva":
                     b_k['nb_sound_it'] += 1
                     rospy.loginfo('Controller received a vocal trajectory')
                     #print np.shape(traj_msg.vocal_trajectory.data)
-                    s_response_torso_sound, s_response_baxter_sound, is_culbuto_name, produced_name = self.voice.execute_analyse(traj_msg.vocal_trajectory)
+                    s_response_torso_sound, s_response_baxter_sound, \
+                    is_culbuto_name, produced_name, raw_torso_sound \
+                    = self.voice.execute_analyse(traj_msg.vocal_trajectory)
                     #print "torso sounds:"
                     #print s_response_torso_sound
+                    b_k['raw_torso_sounds'] += [raw_torso_sound]
                     if produced_name:
                         if not produced_name in b_k['produced_names']: 
                             b_k['produced_names'][produced_name] = 1
@@ -356,8 +363,16 @@ class Controller(object):
                             self.perception.start_recording(self.params['nb_points'])
                             self.baxter.replace()
                             s_response_physical = self.perception.stop_recording()
+                            is_culbuto_touched_test = self.is_culbuto_touched(s_response_physical)
+                            if is_culbuto_touched_test:
+                                rospy.logwarn("SHOULD NOT HAPPEN")
+                                raw_input("WTF CULBUTO WAS TOUCHED WHILE TALKING BRUUUH")
+
                             self.baxter.reset(blocking=False)
                             self.torso.reset(True)
+                            self.wait_motionless_culbuto()
+                            self.ensure_culbuto_safe_pos(self.get_culb_coord(self.perception.get(),orientation=True))
+
                 elif traj_msg.trajectory_type == "arm":
                     b_k['nb_motor_it'] += 1
                     rospy.loginfo('Controller received a torso trajectory')
@@ -371,9 +386,11 @@ class Controller(object):
                     rospy.logerr('Controller received an unknown trajectory type')
 
                 self.learning.perceive(s_context, s_response_physical, s_response_torso_sound, s_response_baxter_sound)
-
-                self.wait_motionless_culbuto()
-                self.ensure_culbuto_safe_pos(self.get_culb_coord(self.perception.get(),orientation=True))
+                if traj_msg.trajectory_type == "arm":
+                    # checking if culbuto is motionless takes time, so we do not perform this check 
+                    # for diva motor command (which cannot end up moving the culb)
+                    self.wait_motionless_culbuto()
+                    self.ensure_culbuto_safe_pos(self.get_culb_coord(self.perception.get(),orientation=True))
                 # Reset culbuto periodically
                 if self.iteration % self.params['reset_every'] == 0:
                     if self.is_culbuto_too_far():
@@ -382,8 +399,8 @@ class Controller(object):
                         self.baxter.replace()
                         self.baxter.reset(blocking=False)
                         self.torso.reset(True)
-                self.wait_motionless_culbuto()
-                self.ensure_culbuto_safe_pos(self.get_culb_coord(self.perception.get(),orientation=True))
+                        self.wait_motionless_culbuto()
+                        self.ensure_culbuto_safe_pos(self.get_culb_coord(self.perception.get(),orientation=True))
                 if self.iteration % self.params['save_every'] == 0:
                     self.learning.save()
                     self.save_bk(b_k)

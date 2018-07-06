@@ -69,6 +69,10 @@ class Supervisor(object):
         
         self.mids = ["mod"+ str(i) for i in range(1, 15) if "mod"+ str(i) in self.modules.keys()]
 
+        #Book-keeping
+        self.actions = []
+        self.observations = []
+
     
     def mid2motor_space(self, mid):
         if mid in ["mod"+ str(i) for i in range(1, 8)]:
@@ -83,6 +87,8 @@ class Supervisor(object):
             sm_data[mid] = self.modules[mid].sensorimotor_model.save()
             im_data[mid] = self.modules[mid].interest_model.save()             
         return {
+                "actions": self.actions,
+                "observations": self.observations,
                 "sm_data":sm_data,
                 #"im_data":im_data,
                 "goals":self.goals,
@@ -226,6 +232,8 @@ class Supervisor(object):
         if not hasattr(self, "m"):
             return False
         ms = self.set_ms(self.m, s)
+        self.observations += [s]
+        self.actions += [self.m]
         self.update_sensorimotor_models(ms)
         if self.mid_control is not None:
             self.modules[self.mid_control].update_im(self.modules[self.mid_control].get_m(ms), self.modules[self.mid_control].get_s(ms))
