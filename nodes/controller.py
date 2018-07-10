@@ -287,7 +287,7 @@ class Controller(object):
             xs.append(round(point.culbuto_1.pose.position.x,4))
             ys.append(round(point.culbuto_1.pose.position.y,4))
             zs.append(round(point.culbuto_1.pose.position.z,4))
-        #rospy.logwarn("X:{},Y:{},Z:{}".format(np.var(xs), np.var(ys), np.var(zs)))
+        rospy.logwarn("X:{},Y:{},Z:{}".format(np.var(xs), np.var(ys), np.var(zs)))
         if (np.var(xs) > thr) or (np.var(ys) > thr) or (np.var(zs) > thr):
             return True
         else:

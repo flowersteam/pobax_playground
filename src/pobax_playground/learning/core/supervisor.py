@@ -50,6 +50,7 @@ class Supervisor(object):
         self.arm_modules = ['mod1','mod3','mod6']
         self.diva_modules = ['mod12','mod14']
         self.arm_goal_selection = 0.10
+
         
         # Create the learning modules:
         self.modules['mod1'] = LearningModule("mod1", self.m_arm, self.s_hand, self.conf, explo_noise=self.explo_noise)
@@ -105,6 +106,9 @@ class Supervisor(object):
         if iteration < 0:
             iteration = len(data["chosen_modules"])
         self.chosen_modules = data["chosen_modules"][:iteration]
+        self.observations = data["observations"][:iteration]
+        self.actions = data["actions"][:iteration]
+        self.goals = data["goals"][:iteration]
         #self.pp_evolution = data["pp_evolution"]
         #self.interests_evolution = data["interests_evolution"]
         #for mid in self.modules.keys():
