@@ -313,7 +313,7 @@ class Controller(object):
         rospy.loginfo("controller node up and running")
         nb_iterations = rospy.get_param('/pobax_playground/iterations')
         self.iteration = self.starting_iteration
-
+        self.nb_culbuto_too_far = 0
         #Init Book-Keeping dict or load it if starting from previous run
         if self.iteration > 0:
             b_k = self.load_bk()
@@ -321,6 +321,7 @@ class Controller(object):
             b_k = dict()
             b_k['nb_culbuto_touched'] = 0
             b_k['nb_culbuto_pronounced'] = 0
+            b_k['nb_culbuto_replaced'] = 0
             b_k['nb_motor_it'] = 0
             b_k['nb_sound_it'] = 0
             b_k['produced_names'] = dict()
@@ -330,7 +331,11 @@ class Controller(object):
             while not rospy.is_shutdown() and self.iteration < nb_iterations:
                 self.iteration += 1
                 rospy.logwarn("#### Iteration {}/{}".format(self.iteration, nb_iterations))
-                rospy.logwarn("Book-keeping: culb_touched= {}, culb_said={}, nb_motor: {}, nb_sound: {}".format(b_k['nb_culbuto_touched'], b_k['nb_culbuto_pronounced'], b_k['nb_motor_it'], b_k['nb_sound_it']))
+                rospy.logwarn("Book-keeping: culb: touched={},said={},replaced:{}, nb_motor:{}, nb_sound:{}".format(b_k['nb_culbuto_touched'],
+                                                                                                                   b_k['nb_culbuto_pronounced'],
+                                                                                                                   b_k['nb_culbuto_replaced'],
+                                                                                                                   b_k['nb_motor_it'],
+                                                                                                                   b_k['nb_sound_it']))
                 rospy.logwarn("List of torso's produced sounds: {}".format(b_k['produced_names']))
                 # Init sensorial responses
                 s_response_physical = None
@@ -359,19 +364,16 @@ class Controller(object):
                         b_k['nb_culbuto_pronounced'] += 1
                         #checks wether baxter must replace culbuto at Torso's arm reach
                         if self.is_culbuto_too_far():
+                            b_k['nb_culbuto_replaced'] += 1
                             self.torso.set_safe_pose() #should be a blocking call
                             self.perception.start_recording(self.params['nb_points'])
                             self.baxter.replace()
                             s_response_physical = self.perception.stop_recording()
-                            is_culbuto_touched_test = self.is_culbuto_touched(s_response_physical)
-                            if is_culbuto_touched_test:
-                                rospy.logwarn("SHOULD NOT HAPPEN")
-                                raw_input("WTF CULBUTO WAS TOUCHED WHILE TALKING BRUUUH")
-
                             self.baxter.reset(blocking=False)
                             self.torso.reset(True)
                             self.wait_motionless_culbuto()
                             self.ensure_culbuto_safe_pos(self.get_culb_coord(self.perception.get(),orientation=True))
+                            self.nb_culbuto_too_far = 0
 
                 elif traj_msg.trajectory_type == "arm":
                     b_k['nb_motor_it'] += 1
@@ -394,13 +396,16 @@ class Controller(object):
                 # Reset culbuto periodically
                 if self.iteration % self.params['reset_every'] == 0:
                     if self.is_culbuto_too_far():
-                        rospy.loginfo("Periodic reset of culbuto (which is too far for torso)")
-                        self.torso.set_safe_pose() #should be a blocking call
-                        self.baxter.replace()
-                        self.baxter.reset(blocking=False)
-                        self.torso.reset(True)
-                        self.wait_motionless_culbuto()
-                        self.ensure_culbuto_safe_pos(self.get_culb_coord(self.perception.get(),orientation=True))
+                        self.nb_culbuto_too_far += 1
+                        if self.nb_culbuto_too_far >= 20:
+                            rospy.loginfo("Periodic reset of culbuto (which is too far for torso)")
+                            self.torso.set_safe_pose() #should be a blocking call
+                            self.baxter.replace()
+                            self.baxter.reset(blocking=False)
+                            self.torso.reset(True)
+                            self.wait_motionless_culbuto()
+                            self.ensure_culbuto_safe_pos(self.get_culb_coord(self.perception.get(),orientation=True))
+                            self.nb_culbuto_too_far = 0
                 if self.iteration % self.params['save_every'] == 0:
                     self.learning.save()
                     self.save_bk(b_k)
