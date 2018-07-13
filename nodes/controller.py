@@ -364,7 +364,6 @@ class Controller(object):
                         b_k['nb_culbuto_pronounced'] += 1
                         #checks wether baxter must replace culbuto at Torso's arm reach
                         if self.is_culbuto_too_far():
-                            b_k['nb_culbuto_replaced'] += 1
                             self.torso.set_safe_pose() #should be a blocking call
                             self.perception.start_recording(self.params['nb_points'])
                             self.baxter.replace()
@@ -394,18 +393,17 @@ class Controller(object):
                     self.wait_motionless_culbuto()
                     self.ensure_culbuto_safe_pos(self.get_culb_coord(self.perception.get(),orientation=True))
                 # Reset culbuto periodically
-                if self.iteration % self.params['reset_every'] == 0:
-                    if self.is_culbuto_too_far():
-                        self.nb_culbuto_too_far += 1
-                        if self.nb_culbuto_too_far >= 20:
-                            rospy.loginfo("Periodic reset of culbuto (which is too far for torso)")
-                            self.torso.set_safe_pose() #should be a blocking call
-                            self.baxter.replace()
-                            self.baxter.reset(blocking=False)
-                            self.torso.reset(True)
-                            self.wait_motionless_culbuto()
-                            self.ensure_culbuto_safe_pos(self.get_culb_coord(self.perception.get(),orientation=True))
-                            self.nb_culbuto_too_far = 0
+                if self.is_culbuto_too_far():
+                    self.nb_culbuto_too_far += 1
+                    if self.nb_culbuto_too_far >= self.params['reset_every']:
+                        rospy.loginfo("Periodic reset of culbuto (which is too far for torso)")
+                        self.torso.set_safe_pose() #should be a blocking call
+                        self.baxter.replace()
+                        self.baxter.reset(blocking=False)
+                        self.torso.reset(True)
+                        self.wait_motionless_culbuto()
+                        self.ensure_culbuto_safe_pos(self.get_culb_coord(self.perception.get(),orientation=True))
+                        self.nb_culbuto_too_far = 0
                 if self.iteration % self.params['save_every'] == 0:
                     self.learning.save()
                     self.save_bk(b_k)
