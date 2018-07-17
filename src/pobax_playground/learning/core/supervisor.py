@@ -188,12 +188,16 @@ class Supervisor(object):
             self.last_cmd = "diva"
         else:
             r = np.random.random()
+        module = None
         if r > self.arm_goal_selection:
             self.m[:self.arm_n_dims] = 0.
             self.last_cmd = "diva"
+            module = "diva_babbling"
         else:
             self.m[self.arm_n_dims:] = 0.
             self.last_cmd = "arm"
+            module = "arm_babbling"
+        self.chosen_modules.append(module)
         return self.m, self.last_cmd
     
     def set_ms(self, m, s): return np.array(list(m) + list(s))
@@ -206,7 +210,6 @@ class Supervisor(object):
     def produce(self, context):
         if self.t < self.n_motor_babbling:
             self.mid_control = None
-            self.chosen_modules.append("motor_babbling")
             return self.motor_babbling()
         else:
             mid = self.choose_babbling_module()

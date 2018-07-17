@@ -326,6 +326,11 @@ class Controller(object):
             b_k['nb_sound_it'] = 0
             b_k['produced_names'] = dict()
             b_k['raw_torso_sounds'] = []
+            b_k['culbuto_touched'] = []
+            b_k['culbuto_pronounced'] = []
+            b_k['culbuto_replaced'] = []
+            b_k['nb_periodic_replace'] = 0
+            b_k['periodic_replace'] = []
 
         try:
             while not rospy.is_shutdown() and self.iteration < nb_iterations:
@@ -362,8 +367,11 @@ class Controller(object):
                             b_k['produced_names'][produced_name] += 1
                     if is_culbuto_name:
                         b_k['nb_culbuto_pronounced'] += 1
+                        b_k['culbuto_pronounced'].append(self.iteration)
                         #checks wether baxter must replace culbuto at Torso's arm reach
                         if self.is_culbuto_too_far():
+                            b_k['nb_culbuto_replaced'] += 1
+                            b_k['culbuto_replaced'].append(self.iteration)
                             self.torso.set_safe_pose() #should be a blocking call
                             self.perception.start_recording(self.params['nb_points'])
                             self.baxter.replace()
@@ -381,7 +389,9 @@ class Controller(object):
                     s_response_physical = self.perception.record(nb_points=self.params['nb_points']) #blocking
                     self.torso.reset(True)
                     is_culbuto_touched = self.is_culbuto_touched(s_response_physical)
-                    if is_culbuto_touched: b_k['nb_culbuto_touched'] += 1
+                    if is_culbuto_touched:
+                        b_k['nb_culbuto_touched'] += 1
+                        b_k['culbuto_touched'].append(self.iteration)
                     s_response_baxter_sound = self.voice.baxter_analyse(is_culbuto_touched)
                 else:
                     rospy.logerr('Controller received an unknown trajectory type')
@@ -397,6 +407,8 @@ class Controller(object):
                     self.nb_culbuto_too_far += 1
                     if self.nb_culbuto_too_far >= self.params['reset_every']:
                         rospy.loginfo("Periodic reset of culbuto (which is too far for torso)")
+                        b_k['nb_periodic_replace'] += 1
+                        b_k['periodic_replace'].append(self.iteration)
                         self.torso.set_safe_pose() #should be a blocking call
                         self.baxter.replace()
                         self.baxter.reset(blocking=False)

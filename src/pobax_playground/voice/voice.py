@@ -190,7 +190,7 @@ class Voice(object):
         if not sound_id == None: # A word was choosen by caregiver
             rospy.logwarn('Voice Node: Baxter says %s' % sound_id)
             if self.audio: # Play the word
-                url= "http://193.50.110.54:8080/api/v1/"+sound_id
+                url= "http://raspberrypi.local:8080/api/v1/"+sound_id
                 contents = urllib2.urlopen(url).read()
                 #self.diva.compute_sensory_effect(self.full_human_motor_traj[sound_id],sound_power=30.)
         return self.caregiver_sound

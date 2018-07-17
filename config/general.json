@@ -4,6 +4,6 @@
   "baxter_grasp_bound_line": [[0.465,0.365],[-0.320,-0.463]],
   "culbuto_height_limit": 0.06,
   "baxter_result_refresh_rate": 20,
-  "save_every": 300,
-  "reset_every": 20
+  "save_every": 2000,
+  "reset_every": 40
 }
